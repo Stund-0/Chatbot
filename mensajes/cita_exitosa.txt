@@ -1,0 +1,16 @@
+¡Perfecto! Tu cita ha sido agendada exitosamente ✅
+
+Resumen de tu cita:
+• Especialidad: {{ESPECIALIDAD}}
+• Fecha: {{FECHA}}
+• Hora: {{HORA}}
+• Nombre: {{NOMBRE}}
+• Teléfono: {{TELEFONO}}
+• Folio: {{FOLIO}}
+
+Te recordamos:
+• Llegar 10 minutos antes de tu cita
+• Traer tu identificación oficial
+• Si requieres cancelar, hazlo con al menos 24 horas de anticipación
+
+¡Te esperamos!

@@ -1,0 +1,11 @@
+¡Hola! Bienvenido/a a {{NOMBRE_EMPRESA}} 🏥
+
+{{ESLOGAN}}
+
+Somos tu aliado en salud y bienestar. Estamos aquí para ayudarte con:
+• Consultas y agendamiento de citas
+• Información sobre servicios y especialidades
+• Precios y horarios de atención
+• Cualquier otra pregunta que tengas
+
+¿En qué puedo ayudarte el día de hoy?

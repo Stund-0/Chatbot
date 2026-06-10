@@ -1,0 +1,19 @@
+=== PRODUCTOS ===
+
+Código: PRO-001
+Nombre: Consulta General
+Descripción: Atención médica general con nuestro equipo de profesionales.
+Precio: $500 MXN
+Disponibilidad: Con cita previa
+
+Código: PRO-002
+Nombre: Consulta Especializada
+Descripción: Atención con médico especialista en diversas áreas.
+Precio: $800 MXN
+Disponibilidad: Con cita previa
+
+Código: PRO-003
+Nombre: Análisis Clínicos
+Descripción: Exámenes de laboratorio básicos y especializados.
+Precio: Desde $200 MXN
+Disponibilidad: Previa indicación médica

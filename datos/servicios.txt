@@ -1,0 +1,31 @@
+=== SERVICIOS ===
+
+Servicio: Medicina General
+Descripción: Atención primaria para toda la familia.
+Duración: 30 minutos
+Precio: $500 MXN
+
+Servicio: Pediatría
+Descripción: Atención especializada para niños y adolescentes.
+Duración: 40 minutos
+Precio: $600 MXN
+
+Servicio: Ginecología
+Descripción: Salud femenina integral.
+Duración: 40 minutos
+Precio: $700 MXN
+
+Servicio: Cardiología
+Descripción: Evaluación y tratamiento cardiovascular.
+Duración: 45 minutos
+Precio: $900 MXN
+
+Servicio: Dermatología
+Descripción: Diagnóstico y tratamiento de afecciones de la piel.
+Duración: 30 minutos
+Precio: $800 MXN
+
+Servicio: Psicología
+Descripción: Atención psicológica y terapia.
+Duración: 50 minutos
+Precio: $600 MXN

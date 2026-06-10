@@ -1,0 +1,7 @@
+Tu cita ha sido cancelada exitosamente ✅
+
+Folio de cancelación: {{FOLIO_CANCELACION}}
+
+Si deseas reagendar, no dudes en contactarnos. Estaremos encantados de ayudarte.
+
+¡Gracias por avisarnos con anticipación!

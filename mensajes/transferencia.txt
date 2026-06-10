@@ -1,0 +1,7 @@
+Gracias por tu paciencia. Estaré transfiriendo tu consulta a un asesor humano que podrá brindarte atención personalizada.
+
+En breve alguien de nuestro equipo se pondrá en contacto contigo al número {{TELEFONO}}.
+
+Si lo prefieres, puedes llamarnos directamente al {{TELEFONO_PRINCIPAL}} en horario de atención.
+
+¡Gracias por contactarnos!

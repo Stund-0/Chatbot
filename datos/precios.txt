@@ -1,0 +1,14 @@
+=== LISTA DE PRECIOS ===
+
+Consulta General: $500 MXN
+Consulta Especializada: $800 MXN - $1,200 MXN
+Pediatría: $600 MXN
+Ginecología: $700 MXN
+Cardiología: $900 MXN
+Dermatología: $800 MXN
+Psicología: $600 MXN
+Análisis Clínicos Básicos: $200 MXN
+Análisis Clínicos Completo: $500 MXN
+Electrocardiograma: $350 MXN
+
+Formas de pago aceptadas: Efectivo, Tarjeta de crédito/débito, Transferencia bancaria.

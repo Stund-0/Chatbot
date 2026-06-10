@@ -1,0 +1,7 @@
+🔔 NOTIFICACIÓN DE CONSULTA PENDIENTE
+
+Cliente: {{NOMBRE_CLIENTE}}
+Teléfono: {{TELEFONO_CLIENTE}}
+Mensaje: {{MENSAJE_CLIENTE}}
+Fecha: {{FECHA}}
+Hora: {{HORA}}

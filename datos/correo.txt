@@ -1,0 +1,4 @@
+=== CORREO ELECTRÓNICO ===
+
+Correo Principal: contacto@minegocio.com
+Correo de Citas: citas@minegocio.com

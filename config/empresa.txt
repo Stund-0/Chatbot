@@ -1,0 +1,5 @@
+NOMBRE: Mi Negocio
+TIPO: Consultorio Médico
+ESLOGAN: Tu salud es nuestra prioridad
+LOGO: logo.png
+VERSION: 1.0.0

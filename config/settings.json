@@ -1,0 +1,22 @@
+{
+  "zona_horaria": "America/Mexico_City",
+  "formato_fecha": "dd/mm/yyyy",
+  "formato_hora": "HH:MM",
+  "moneda": "MXN",
+  "idioma": "es",
+  "whatsapp_token": "",
+  "whatsapp_phone_id": "",
+  "whatsapp_verify_token": "chatbot123",
+  "whatsapp_api_version": "v22.0",
+  "openai_api_key": "",
+  "openai_model": "gpt-4o-mini",
+  "modo_simulacion": true,
+  "puerto": 5000,
+  "debug": true,
+  "admin_telefono": "",
+  "admin_correo": "",
+  "max_intentos_ia": 3,
+  "tiempo_espera_minutos": 30,
+  "dias_anticipacion_max": 30,
+  "permitir_cancelar": true
+}

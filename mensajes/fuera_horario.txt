@@ -1,0 +1,9 @@
+Gracias por contactarnos. Nuestro horario de atención es:
+
+{{HORARIOS}}
+
+Actualmente nos encontramos fuera de nuestro horario laboral. Hemos recibido tu mensaje y te atenderemos tan pronto como sea posible en nuestro próximo horario de atención.
+
+Si deseas, puedes dejarnos tu nombre, número de teléfono y el motivo de tu contacto, y nos comunicaremos contigo a la brevedad.
+
+¡Gracias por tu paciencia!

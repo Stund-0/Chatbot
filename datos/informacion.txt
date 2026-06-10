@@ -1,0 +1,29 @@
+=== INFORMACIÓN GENERAL ===
+
+¡Bienvenido a Mi Negocio!
+
+Somos un consultorio médico comprometido con tu salud y bienestar.
+Contamos con un equipo de profesionales altamente capacitados en diversas especialidades.
+
+Misión: Brindar atención médica de calidad, accesible y personalizada.
+Visión: Ser el consultorio de referencia en la comunidad, reconocido por nuestra calidez y profesionalismo.
+
+Valores:
+- Respeto
+- Honestidad
+- Calidad
+- Empatía
+- Responsabilidad
+
+Contamos con instalaciones accesibles para personas con discapacidad.
+Aceptamos seguros médicos: GNP, MetLife, AXA, Seguros Monterrey.
+
+¿Cómo agendar una cita?
+Puede solicitar una cita directamente a través de este chat proporcionando:
+1. Nombre completo
+2. Teléfono de contacto
+3. Especialidad deseada
+4. Fecha preferida
+5. Horario preferido
+
+Política de cancelación: Las citas pueden cancelarse con al menos 24 horas de anticipación.

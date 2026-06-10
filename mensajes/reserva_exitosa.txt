@@ -1,0 +1,12 @@
+¡Excelente! Tu reserva ha sido registrada exitosamente ✅
+
+Resumen de tu reserva:
+• Producto: {{PRODUCTO}}
+• Cantidad: {{CANTIDAD}}
+• Nombre: {{NOMBRE}}
+• Teléfono: {{TELEFONO}}
+• Folio: {{FOLIO}}
+
+Te notificaremos cuando tu pedido esté listo. Si tienes alguna duda, no dudes en contactarnos.
+
+¡Gracias por tu preferencia!

@@ -1,0 +1,40 @@
+=== PREGUNTAS FRECUENTES ===
+
+P: ¿Cómo agendo una cita?
+R: Puede agendar una cita proporcionando su nombre completo, teléfono, especialidad, fecha y horario deseado. Con gusto le ayudamos en este chat.
+
+P: ¿Cuáles son los horarios de atención?
+R: Atendemos de lunes a viernes de 8:00 AM a 6:00 PM y sábados de 9:00 AM a 2:00 PM.
+
+P: ¿Aceptan seguros médicos?
+R: Sí, aceptamos GNP, MetLife, AXA y Seguros Monterrey.
+
+P: ¿Cuánto cuesta una consulta general?
+R: La consulta general tiene un costo de $500 MXN.
+
+P: ¿Cómo puedo cancelar mi cita?
+R: Puede cancelar su cita con al menos 24 horas de anticipación. Indíquenos el nombre y la fecha de su cita para procesar la cancelación.
+
+P: ¿Realizan análisis clínicos?
+R: Sí, contamos con análisis clínicos básicos desde $200 MXN y completos desde $500 MXN.
+
+P: ¿Cuál es la dirección?
+R: Estamos en Calle Principal #123, Colonia Centro, Guadalajara, Jalisco.
+
+P: ¿Hay estacionamiento?
+R: Sí, contamos con estacionamiento gratuito para nuestros pacientes.
+
+P: ¿Atienden a niños?
+R: Sí, tenemos servicio de pediatría para la atención de niños y adolescentes.
+
+P: ¿Cuánto dura una consulta?
+R: La duración varía según la especialidad, generalmente entre 30 y 50 minutos.
+
+P: ¿Puedo comprar medicamentos aquí?
+R: No contamos con farmacia, pero podemos recomendarle dónde adquirir sus medicamentos.
+
+P: ¿Cuál es la edad mínima para consulta general?
+R: Atendemos a pacientes de todas las edades, desde recién nacidos en pediatría hasta adultos mayores.
+
+P: ¿Cómo llego a su consultorio?
+R: Estamos ubicados en Calle Principal #123, Colonia Centro, a una cuadra de la plaza principal, edificio blanco con letrero azul.

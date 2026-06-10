@@ -1,0 +1,5 @@
+=== TELÉFONOS DE CONTACTO ===
+
+Teléfono Principal: +52 33 1234 5678
+Teléfono Secundario: +52 33 8765 4321
+WhatsApp: +52 33 1234 5678
