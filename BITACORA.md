@@ -26,6 +26,7 @@
 - [x] docker-compose.yml (PostgreSQL + app)
 - [x] CI/CD (GitHub Actions: lint → test → docker build)
 - [x] Dockerfile con usuario no-root + healthcheck
+- [x] Fix fuera_horario: agenda 24/7, transfer notifica admin fuera de horario
 - [x] README con documentación completa
 
 ## Pendientes
