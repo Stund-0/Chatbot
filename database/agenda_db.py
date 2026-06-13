@@ -2,7 +2,7 @@ import os
 import logging
 from datetime import datetime
 
-DATABASE_URL = os.getenv("DATABASE_URL", "")
+DATABASE_URL = os.getenv("CUSTOM_DB_URL") or os.getenv("DATABASE_URL", "")
 _pg_pool = None
 
 logger = logging.getLogger(__name__)
