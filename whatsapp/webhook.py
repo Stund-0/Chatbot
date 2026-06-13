@@ -4,6 +4,8 @@ import logging
 
 from flask import Blueprint, request, jsonify, current_app
 
+from .notificaciones import notificar_nueva_cita, notificar_admin
+
 webhook_bp = Blueprint("webhook", __name__)
 
 VERIFY_TOKEN = os.getenv("WHATSAPP_VERIFY_TOKEN", "chatbot123")
@@ -50,13 +52,35 @@ def recibir_mensaje():
                         if chatbot:
                             respuesta = chatbot.procesar_mensaje(text_body, from_number)
 
+                            if not isinstance(respuesta, dict) or "respuesta" not in respuesta:
+                                logger.warning(f"Respuesta invalida del chatbot: {respuesta}")
+                                continue
+
+                            texto_respuesta = respuesta["respuesta"]
+                            if not isinstance(texto_respuesta, str):
+                                texto_respuesta = str(texto_respuesta)
+
                             if not modo_simulacion and sender:
-                                sender.enviar_texto(from_number, respuesta["respuesta"])
+                                sender.enviar_texto(from_number, texto_respuesta)
+
+                            if respuesta.get("intencion") == "cita_agendar" and respuesta.get("datos"):
+                                notificar_nueva_cita(
+                                    respuesta["datos"],
+                                    sender,
+                                    pendiente_confirmacion=respuesta.get("pendiente_confirmacion", False),
+                                )
+
+                            if respuesta.get("transferir"):
+                                notificar_admin(
+                                    numero_cliente=from_number,
+                                    mensaje_cliente=text_body,
+                                    sender=sender,
+                                )
 
                             mensajes_procesados.append({
                                 "numero": from_number,
                                 "mensaje": text_body,
-                                "respuesta": respuesta["respuesta"][:100],
+                                "respuesta": texto_respuesta[:100],
                                 "intencion": respuesta.get("intencion"),
                                 "transferir": respuesta.get("transferir", False),
                             })

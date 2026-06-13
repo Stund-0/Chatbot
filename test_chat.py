@@ -96,7 +96,5 @@ def main():
             print("\n⚠️  [Esta consulta será transferida al administrador]")
 
         print()
-
-
 if __name__ == "__main__":
     main()

@@ -9,13 +9,39 @@ ZONA_HORARIA = pytz.timezone("America/Mexico_City")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
+def _normalizar(texto):
+    reemplazos = {
+        'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u',
+        'ü': 'u', 'ñ': 'n',
+    }
+    for acento, sin_acento in reemplazos.items():
+        texto = texto.replace(acento, sin_acento)
+    return texto
+
+
 class Chatbot:
     def __init__(self, modo_simulacion=True):
         self.modo_simulacion = modo_simulacion
         self.config = self._cargar_config()
         self.datos = {}
         self.mensajes = {}
+        self.contextos = {}
         self._cargar_archivos()
+
+    INTENCIONES_RESET = {"saludo", "emergencia", "transferir", "despedida", "cita_cancelar", "faq", "reportes", "gracias"}
+
+    def _obtener_contexto(self, numero):
+        if not numero:
+            return None
+        return self.contextos.get(numero)
+
+    def _guardar_contexto(self, numero, contexto):
+        if not numero:
+            return
+        if contexto:
+            self.contextos[numero] = contexto
+        else:
+            self.contextos.pop(numero, None)
 
     def _ruta(self, *parts):
         return os.path.join(BASE_DIR, *parts)
@@ -101,8 +127,8 @@ class Chatbot:
         return texto
 
     def _buscar_en_archivos(self, consulta):
-        consulta_lower = consulta.lower()
-        palabras_clave = consulta_lower.split()
+        consulta_norm = _normalizar(consulta.lower())
+        palabras_clave = consulta_norm.split()
 
         orden_busqueda = [
             "preguntas_frecuentes",
@@ -137,9 +163,9 @@ class Chatbot:
                 secciones.append("\n".join(seccion_actual))
 
             for seccion in secciones:
-                seccion_lower = seccion.lower()
+                seccion_norm = _normalizar(seccion.lower())
                 coincidencias = sum(
-                    1 for palabra in palabras_clave if len(palabra) > 3 and palabra in seccion_lower
+                    1 for palabra in palabras_clave if len(palabra) > 3 and palabra in seccion_norm
                 )
                 if coincidencias > 0:
                     resultados.append({
@@ -159,9 +185,9 @@ class Chatbot:
                 lineas = contenido.strip().split("\n")
                 lineas_utiles = [l for l in lineas if not l.startswith("===") and l.strip()]
                 for linea in lineas_utiles:
-                    linea_lower = linea.lower()
+                    linea_norm = _normalizar(linea.lower())
                     for palabra in palabras_clave:
-                        if len(palabra) > 3 and palabra in linea_lower:
+                        if len(palabra) > 3 and palabra in linea_norm:
                             return linea
 
         return None
@@ -171,11 +197,11 @@ class Chatbot:
         if not servicios:
             return None
 
-        servicio_lower = servicio_buscado.lower().strip()
+        servicio_norm = _normalizar(servicio_buscado.lower().strip())
         secciones = servicios.split("\n\n")
 
         for seccion in secciones:
-            if servicio_lower in seccion.lower():
+            if servicio_norm in _normalizar(seccion.lower()):
                 return seccion.strip()
 
         return None
@@ -185,17 +211,17 @@ class Chatbot:
         if not precios:
             return None
 
-        item_lower = item.lower().strip()
+        item_norm = _normalizar(item.lower().strip())
         lineas = precios.split("\n")
         for linea in lineas:
-            if ":" in linea and item_lower in linea.lower():
+            if ":" in linea and item_norm in _normalizar(linea.lower()):
                 return linea.strip()
 
         for linea in lineas:
             if ":" in linea:
                 clave, valor = linea.split(":", 1)
-                palabras_clave = item_lower.split()
-                if any(p in clave.lower() for p in palabras_clave if len(p) > 3):
+                palabras_clave = item_norm.split()
+                if any(p in _normalizar(clave.lower()) for p in palabras_clave if len(p) > 3):
                     return linea.strip()
 
         return None
@@ -205,16 +231,16 @@ class Chatbot:
         if not productos:
             return None
 
-        producto_lower = producto_buscado.lower().strip()
+        producto_norm = _normalizar(producto_buscado.lower().strip())
         secciones = productos.split("\n\n")
 
         for seccion in secciones:
-            if producto_lower in seccion.lower():
+            if producto_norm in _normalizar(seccion.lower()):
                 return seccion.strip()
 
         for seccion in secciones:
-            palabras = producto_lower.split()
-            if any(p in seccion.lower() for p in palabras if len(p) > 3):
+            palabras = producto_norm.split()
+            if any(p in _normalizar(seccion.lower()) for p in palabras if len(p) > 3):
                 return seccion.strip()
 
         return None
@@ -233,24 +259,187 @@ class Chatbot:
         else:
             return False
 
-    def _formatear_horarios_disponibles(self):
-        horarios = self.datos.get("horarios_disponibles", "")
-        if not horarios:
+    def _formatear_horarios_disponibles(self, fecha=None):
+        horarios_raw = self.datos.get("horarios_disponibles", "")
+        if not horarios_raw:
             return self.datos.get("horarios", "No disponible")
-        lineas = [l.strip() for l in horarios.split("\n") if l.strip() and not l.startswith("===")]
-        return "\n".join(lineas) if lineas else "No disponible"
+
+        secciones = horarios_raw.split("\n\n")
+        etiqueta_dia = None
+        if fecha:
+            dia_semana = datetime.strptime(fecha, "%d/%m/%Y").weekday()
+            if dia_semana < 5:
+                etiqueta_dia = "Lunes a Viernes"
+            elif dia_semana == 5:
+                etiqueta_dia = "Sábados"
+            else:
+                return "No hay atención los domingos."
+
+        if etiqueta_dia:
+            for seccion in secciones:
+                if etiqueta_dia in seccion:
+                    lineas = [l.strip() for l in seccion.split("\n") if l.strip() and not l.startswith("===") and not l.startswith("Lunes") and not l.startswith("Sáb")]
+                    break
+            else:
+                return "No disponible"
+        else:
+            vistas = set()
+            lineas = []
+            for seccion in secciones:
+                for l in seccion.split("\n"):
+                    l = l.strip()
+                    if l and not l.startswith("===") and not l.startswith("Lunes") and not l.startswith("Sáb"):
+                        if l not in vistas:
+                            lineas.append(l)
+                            vistas.add(l)
+
+        if fecha:
+            from database.consultas import buscar_citas_por_fecha
+            ocupadas = {c["hora"].strip() for c in buscar_citas_por_fecha(fecha)}
+            if ocupadas:
+                lineas = [l for l in lineas if l not in ocupadas]
+
+        if not lineas:
+            return "No hay horarios disponibles para esta fecha."
+
+        return "\n".join(lineas)
+
+    def _obtener_numero_admin(self):
+        admin_tel = self.config.get("admin_telefono", "")
+        if not admin_tel:
+            admin_tel = os.getenv("ADMIN_TELEFONO", "")
+        return admin_tel.replace("+", "").replace(" ", "").replace("-", "")
+
+    def _manejar_comando_admin(self, mensaje_usuario, numero_usuario):
+        from database.consultas import confirmar_cita, rechazar_cita, buscar_cita_por_folio
+        from whatsapp.notificaciones import notificar_admin
+
+        if not numero_usuario:
+            return None
+        numero_limpio = numero_usuario.replace("+", "").replace(" ", "").replace("-", "")
+        admin_limpio = self._obtener_numero_admin()
+        if numero_limpio != admin_limpio:
+            return None
+
+        msg = mensaje_usuario.strip()
+        cmd_parts = msg.split(None, 1)
+        if len(cmd_parts) != 2:
+            return None
+
+        comando, folio = cmd_parts
+        comando = comando.upper()
+        folio = folio.strip()
+
+        if comando not in ("CONFIRMAR", "RECHAZAR"):
+            return None
+
+        cita = buscar_cita_por_folio(folio)
+        if not cita:
+            return {
+                "respuesta": f"No encontré ninguna cita con folio {folio}.",
+                "intencion": "admin_comando",
+                "transferir": False,
+            }
+
+        if comando == "CONFIRMAR":
+            exito = confirmar_cita(folio)
+            if exito:
+                msg_usuario = (
+                    f"✅ *Tu cita ha sido confirmada!*\n\n"
+                    f"▪️ *Folio:* {cita['folio']}\n"
+                    f"▪️ *Especialidad:* {cita['especialidad']}\n"
+                    f"▪️ *Fecha:* {cita['fecha']}\n"
+                    f"▪️ *Hora:* {cita['hora']}\n\n"
+                    f"Te esperamos! 🏥"
+                )
+                from whatsapp.sender import WhatsAppSender
+                sender = WhatsAppSender(
+                    token=self.config.get("whatsapp_token", os.getenv("WHATSAPP_TOKEN", "")),
+                    phone_id=self.config.get("whatsapp_phone_id", os.getenv("WHATSAPP_PHONE_ID", "")),
+                )
+                if self.modo_simulacion:
+                    print(f"\n[ENVIANDO CONFIRMACION A USUARIO {cita['telefono']}]: {msg_usuario}\n")
+                else:
+                    sender.enviar_texto(cita["telefono"], msg_usuario)
+
+                return {
+                    "respuesta": f"✅ Cita {folio} confirmada. El usuario ha sido notificado.",
+                    "intencion": "admin_comando",
+                    "transferir": False,
+                }
+            else:
+                return {
+                    "respuesta": f"No se pudo confirmar la cita {folio}. Verifica que esté en estado 'pendiente_confirmacion'.",
+                    "intencion": "admin_comando",
+                    "transferir": False,
+                }
+
+        if comando == "RECHAZAR":
+            exito = rechazar_cita(folio)
+            if exito:
+                horarios = self._formatear_horarios_disponibles(cita["fecha"])
+                msg_usuario = (
+                    f"⚠️ *Cita no disponible*\n\n"
+                    f"Lo sentimos, la hora solicitada para el {cita['fecha']} a las {cita['hora']} "
+                    f"ya no está disponible.\n\n"
+                    f"*Horarios disponibles para esa fecha:*\n{horarios}\n\n"
+                    f"Por favor, elige un nuevo horario y vuelve a solicitarlo. 🙏"
+                )
+                from whatsapp.sender import WhatsAppSender
+                sender = WhatsAppSender(
+                    token=self.config.get("whatsapp_token", os.getenv("WHATSAPP_TOKEN", "")),
+                    phone_id=self.config.get("whatsapp_phone_id", os.getenv("WHATSAPP_PHONE_ID", "")),
+                )
+                if self.modo_simulacion:
+                    print(f"\n[ENVIANDO RECHAZO A USUARIO {cita['telefono']}]: {msg_usuario}\n")
+                else:
+                    sender.enviar_texto(cita["telefono"], msg_usuario)
+
+                return {
+                    "respuesta": f"❌ Cita {folio} rechazada. El usuario ha sido notificado con horarios disponibles.",
+                    "intencion": "admin_comando",
+                    "transferir": False,
+                }
+            else:
+                return {
+                    "respuesta": f"No se pudo rechazar la cita {folio}. Verifica que esté en estado 'pendiente_confirmacion'.",
+                    "intencion": "admin_comando",
+                    "transferir": False,
+                }
+
+    def _datos_completos_para_cita(self, entidades):
+        return all(entidades.get(k) for k in ("nombre", "especialidad", "fecha", "hora"))
+
+    def _datos_completos_para_reserva(self, entidades):
+        return all(entidades.get(k) for k in ("nombre", "producto"))
 
     def procesar_mensaje(self, mensaje_usuario, numero_usuario=None, contexto=None):
+        resultado_admin = self._manejar_comando_admin(mensaje_usuario, numero_usuario)
+        if resultado_admin:
+            return resultado_admin
+
         from ia.interprete import detectar_intencion, extraer_entidades
 
         intencion = detectar_intencion(mensaje_usuario)
         entidades = extraer_entidades(mensaje_usuario)
 
+        if self._datos_completos_para_cita(entidades) and intencion not in self.INTENCIONES_RESET:
+            intencion = "cita_agendar"
+        elif self._datos_completos_para_reserva(entidades) and intencion not in self.INTENCIONES_RESET:
+            intencion = "reserva_crear"
+
         if contexto:
             entidades.update(contexto)
 
-        if not self._esta_en_horario_laboral():
-            return self._respuesta_fuera_horario()
+        ctx_previo = self._obtener_contexto(numero_usuario)
+        if ctx_previo and ctx_previo.get("esperando_datos") and intencion not in self.INTENCIONES_RESET:
+            intencion = ctx_previo["intencion"]
+            entidades_previas = ctx_previo.get("entidades", {})
+            for k, v in entidades_previas.items():
+                if k not in entidades:
+                    entidades[k] = v
+
+        self._es_fuera_horario = not self._esta_en_horario_laboral()
 
         gestor_respuesta = {
             "saludo": self._manejar_saludo,
@@ -271,12 +460,24 @@ class Chatbot:
             "gracias": self._manejar_gracias,
             "despedida": self._manejar_despedida,
             "faq": self._manejar_faq,
+            "fechas_disponibles": self._manejar_fechas_disponibles,
             "reportes": self._manejar_reportes,
             "consulta_general": self._manejar_consulta_general,
         }
 
         manejador = gestor_respuesta.get(intencion, self._manejar_consulta_general)
-        return manejador(mensaje_usuario, entidades, numero_usuario)
+        respuesta = manejador(mensaje_usuario, entidades, numero_usuario)
+
+        if respuesta.get("esperando_datos"):
+            self._guardar_contexto(numero_usuario, {
+                "intencion": intencion,
+                "entidades": entidades,
+                "esperando_datos": True,
+            })
+        else:
+            self._guardar_contexto(numero_usuario, None)
+
+        return respuesta
 
     def _respuesta_fuera_horario(self):
         template = self.mensajes.get("fuera_horario", "Estamos fuera de horario.")
@@ -289,6 +490,18 @@ class Chatbot:
         return {"respuesta": respuesta, "intencion": "saludo", "transferir": False}
 
     def _manejar_informacion_general(self, mensaje, entidades, numero):
+        esp = entidades.get("especialidad", "")
+        if esp:
+            servicio_info = self._obtener_info_servicio(esp)
+            precio = self._obtener_precio(esp)
+            respuesta = ""
+            if servicio_info:
+                respuesta += f"📋 *{esp}*\n\n{servicio_info}\n"
+            if precio:
+                respuesta += f"\n💰 *Precio:* {precio.split(':', 1)[1].strip() if ':' in precio else precio}"
+            if respuesta:
+                return {"respuesta": respuesta, "intencion": "informacion", "transferir": False}
+
         info = self.datos.get("informacion", "")
         if info:
             lineas = [l for l in info.split("\n") if not l.startswith("===") and l.strip()]
@@ -298,6 +511,69 @@ class Chatbot:
                 self.mensajes.get("sin_respuesta", "No tengo esa información.")
             )
         return {"respuesta": respuesta, "intencion": "informacion", "transferir": False}
+
+    def _manejar_fechas_disponibles(self, mensaje, entidades, numero):
+        from database.consultas import buscar_ocupadas_por_rango
+        from datetime import datetime, timedelta
+
+        hoy = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        nombres_dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+        meses_es = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+        slots_semana = {"0": ["9:00 AM","10:00 AM","11:00 AM","12:00 PM","2:00 PM","3:00 PM","4:00 PM","5:00 PM"],
+                        "1": ["9:00 AM","10:00 AM","11:00 AM","12:00 PM","2:00 PM","3:00 PM","4:00 PM","5:00 PM"],
+                        "2": ["9:00 AM","10:00 AM","11:00 AM","12:00 PM","2:00 PM","3:00 PM","4:00 PM","5:00 PM"],
+                        "3": ["9:00 AM","10:00 AM","11:00 AM","12:00 PM","2:00 PM","3:00 PM","4:00 PM","5:00 PM"],
+                        "4": ["9:00 AM","10:00 AM","11:00 AM","12:00 PM","2:00 PM","3:00 PM","4:00 PM","5:00 PM"],
+                        "5": ["9:00 AM","10:00 AM","11:00 AM","12:00 PM","1:00 PM"],
+                        "6": []}
+
+        if "mes" in mensaje.lower():
+            fecha_inicio = max(hoy.replace(day=1), hoy)
+            if hoy.month == 12:
+                fecha_fin = hoy.replace(year=hoy.year+1, month=1, day=1) - timedelta(days=1)
+            else:
+                fecha_fin = hoy.replace(month=hoy.month+1, day=1) - timedelta(days=1)
+            encabezado = f"📅 *Fechas disponibles de {meses_es[hoy.month]}:*"
+        elif "semana" in mensaje.lower():
+            inicio_semana = hoy - timedelta(days=hoy.weekday())
+            fecha_inicio = max(inicio_semana, hoy)
+            fecha_fin = inicio_semana + timedelta(days=6)
+            encabezado = f"📅 *Días disponibles de esta semana:*"
+        else:
+            fecha_inicio = hoy
+            fecha_fin = hoy + timedelta(days=7)
+            encabezado = f"📅 *Próximos días disponibles:*"
+
+        ocupadas = buscar_ocupadas_por_rango(
+            fecha_inicio.strftime("%d/%m/%Y"),
+            fecha_fin.strftime("%d/%m/%Y"),
+        )
+
+        ocupadas_por_fecha = {}
+        for o in ocupadas:
+            f = o["fecha"]
+            if f not in ocupadas_por_fecha:
+                ocupadas_por_fecha[f] = set()
+            ocupadas_por_fecha[f].add(o["hora"].strip())
+
+        respuesta = encabezado + "\n\n"
+        dia_actual = fecha_inicio
+        while dia_actual <= fecha_fin:
+            fecha_str = dia_actual.strftime("%d/%m/%Y")
+            dia_idx = str(dia_actual.weekday())
+            slots_dia = slots_semana.get(dia_idx, [])
+            if not slots_dia:
+                dia_actual += timedelta(days=1)
+                continue
+            ocupadas_hoy = ocupadas_por_fecha.get(fecha_str, set())
+            libres = [s for s in slots_dia if s not in ocupadas_hoy]
+            if libres:
+                respuesta += f"▪️ *{nombres_dias[dia_actual.weekday()]} {dia_actual.strftime('%d/%m')}:* {', '.join(libres)}\n"
+            else:
+                respuesta += f"▪️ {nombres_dias[dia_actual.weekday()]} {dia_actual.strftime('%d/%m')}: Completamente ocupado ❌\n"
+            dia_actual += timedelta(days=1)
+
+        return {"respuesta": respuesta, "intencion": "fechas_disponibles", "transferir": False}
 
     def _manejar_horarios(self, mensaje, entidades, numero):
         horarios = self.datos.get("horarios", "")
@@ -346,15 +622,29 @@ class Chatbot:
 
     def _manejar_agendar_cita(self, mensaje, entidades, numero):
         if not entidades.get("nombre") or not entidades.get("especialidad"):
-            respuesta = (
-                "Claro, con gusto te ayudo a agendar una cita. Por favor, proporciona los siguientes datos:\n\n"
-                "1. 📝 *Nombre completo*\n"
-                "2. 📱 *Teléfono de contacto*\n"
-                "3. 🏥 *Especialidad deseada*\n"
-                "4. 📅 *Fecha preferida (dd/mm/aaaa)*\n"
-                "5. 🕐 *Horario preferido*\n\n"
-                f"*Horarios disponibles:*\n{self._formatear_horarios_disponibles()}"
-            )
+            fecha_detectada = entidades.get("fecha", "")
+            if fecha_detectada:
+                horarios = self._formatear_horarios_disponibles(fecha_detectada)
+                respuesta = (
+                    "Claro, con gusto te ayudo a agendar una cita. Por favor, proporciona los siguientes datos:\n\n"
+                    "1. 📝 *Nombre completo*\n"
+                    "2. 📱 *Teléfono de contacto*\n"
+                    "3. 🏥 *Especialidad deseada*\n"
+                    f"4. 📅 *Fecha preferida:* {fecha_detectada}\n"
+                    "5. 🕐 *Horario preferido*\n\n"
+                    f"*Horarios disponibles para el {fecha_detectada}:*\n{horarios}"
+                )
+            else:
+                horarios = self._formatear_horarios_disponibles()
+                respuesta = (
+                    "Claro, con gusto te ayudo a agendar una cita. Por favor, proporciona los siguientes datos:\n\n"
+                    "1. 📝 *Nombre completo*\n"
+                    "2. 📱 *Teléfono de contacto*\n"
+                    "3. 🏥 *Especialidad deseada*\n"
+                    "4. 📅 *Fecha preferida (dd/mm/aaaa)*\n"
+                    "5. 🕐 *Horario preferido*\n\n"
+                    f"*Horarios disponibles:*\n{horarios}"
+                )
             return {"respuesta": respuesta, "intencion": "cita_agendar", "transferir": False, "esperando_datos": True}
 
         from database.consultas import registrar_cita
@@ -364,19 +654,20 @@ class Chatbot:
             fecha=entidades.get("fecha", ""),
             hora=entidades.get("hora", ""),
             especialidad=entidades["especialidad"],
+            estado="pendiente_confirmacion",
         )
 
-        variables = {
+        datos_cita = {
+            "folio": resultado["folio"],
             "nombre": entidades["nombre"],
             "telefono": entidades.get("telefono", numero or ""),
             "especialidad": entidades["especialidad"],
             "fecha": entidades.get("fecha", "Pendiente"),
             "hora": entidades.get("hora", "Pendiente"),
-            "folio": resultado["folio"],
         }
-        template = self.mensajes.get("cita_exitosa", "Cita agendada.")
-        respuesta = self._reemplazar_variables(template, variables)
-        return {"respuesta": respuesta, "intencion": "cita_agendar", "transferir": False, "datos": resultado}
+        template = self.mensajes.get("espera_confirmacion", "Cita pendiente de confirmación.")
+        respuesta = self._reemplazar_variables(template, datos_cita)
+        return {"respuesta": respuesta, "intencion": "cita_agendar", "transferir": False, "datos": datos_cita, "pendiente_confirmacion": True}
 
     def _manejar_consultar_cita(self, mensaje, entidades, numero):
         from database.consultas import buscar_cita_por_telefono
@@ -422,11 +713,12 @@ class Chatbot:
         if telefono_buscar:
             citas = buscar_cita_por_telefono(telefono_buscar)
             if citas:
-                respuesta = "Tienes las siguientes citas. Indica el *folio* de la que deseas cancelar:\n\n"
-                for c in citas:
-                    if c["estado"] == "pendiente":
+                pendientes = [c for c in citas if c["estado"] == "pendiente"]
+                if pendientes:
+                    respuesta = "Tienes las siguientes citas. Indica el *folio* de la que deseas cancelar:\n\n"
+                    for c in pendientes:
                         respuesta += f"▪️ *Folio:* {c['folio']} - {c['especialidad']} ({c['fecha']} {c['hora']})\n"
-                if not citas:
+                else:
                     respuesta = "No tienes citas pendientes para cancelar."
             else:
                 respuesta = "No encontré citas registradas. Proporciona tu folio de cita para cancelarla."
@@ -531,6 +823,10 @@ class Chatbot:
         return {"respuesta": respuesta, "intencion": "emergencia", "transferir": False}
 
     def _manejar_transferencia(self, mensaje, entidades, numero):
+        if getattr(self, "_es_fuera_horario", False):
+            fuera_template = self.mensajes.get("fuera_horario", "Estamos fuera de horario.")
+            respuesta = self._reemplazar_variables(fuera_template) + "\n\nHemos enviado un aviso a nuestro equipo. Te contactaremos en nuestro próximo horario de atención."
+            return {"respuesta": respuesta, "intencion": "transferir", "transferir": True}
         template = self.mensajes.get("transferencia", "Transfiriendo al administrador.")
         respuesta = self._reemplazar_variables(template, {"telefono": numero or ""})
         return {"respuesta": respuesta, "intencion": "transferir", "transferir": True}
@@ -554,12 +850,68 @@ class Chatbot:
             )
         return {"respuesta": respuesta, "intencion": "faq", "transferir": False}
 
+    def _es_admin(self, numero):
+        if not numero:
+            return False
+        admin_tel = self.config.get("admin_telefono", "")
+        if not admin_tel:
+            admin_tel = os.getenv("ADMIN_TELEFONO", "")
+        numero_limpio = numero.replace("+", "").replace(" ", "").replace("-", "")
+        admin_limpio = admin_tel.replace("+", "").replace(" ", "").replace("-", "")
+        return numero_limpio == admin_limpio
+
     def _manejar_reportes(self, mensaje, entidades, numero):
-        respuesta = (
-            "Los reportes están disponibles para el administrador. "
-            "Si eres administrador, consulta la documentación del sistema."
-        )
-        return {"respuesta": respuesta, "intencion": "reportes", "transferir": True}
+        if not self._es_admin(numero):
+            respuesta = (
+                "Los reportes solo están disponibles para el administrador. "
+                "Si necesitas ayuda, puedo transferirte con él."
+            )
+            return {"respuesta": respuesta, "intencion": "reportes", "transferir": True}
+
+        from database.consultas import listar_citas, listar_reservas
+
+        citas = listar_citas()
+        reservas = listar_reservas()
+
+        respuesta = "📋 *REPORTES DEL SISTEMA*\n\n"
+
+        respuesta += f"📅 *CITAS ({len(citas)}):*\n"
+        if citas:
+            for c in citas[:10]:
+                respuesta += (
+                    f"  {c['folio']} | {c['nombre']} | "
+                    f"{c.get('fecha','?')} {c.get('hora','?')} | "
+                    f"{c.get('especialidad','?')} | {c['estado']}\n"
+                )
+        else:
+            respuesta += "  No hay citas registradas.\n"
+
+        respuesta += f"\n📦 *RESERVAS ({len(reservas)}):*\n"
+        if reservas:
+            for r in reservas[:10]:
+                respuesta += (
+                    f"  {r['folio']} | {r['nombre']} | "
+                    f"{r.get('producto_reservado','?')} x{r.get('cantidad',1)} | "
+                    f"{r['estado']}\n"
+                )
+        else:
+            respuesta += "  No hay reservas registradas.\n"
+
+        return {"respuesta": respuesta, "intencion": "reportes", "transferir": False}
+
+    def _registrar_no_entendido(self, mensaje, numero=None, intencion=None):
+        import json
+        from datetime import datetime
+
+        ruta = self._ruta("datos", "no_entendidos.jsonl")
+        entrada = {
+            "fecha": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "mensaje": mensaje,
+            "numero": numero or "",
+            "intencion": intencion or "",
+        }
+        with open(ruta, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entrada, ensure_ascii=False) + "\n")
 
     def _manejar_consulta_general(self, mensaje, entidades, numero):
         resultado = self._buscar_en_archivos(mensaje)
@@ -568,6 +920,7 @@ class Chatbot:
             respuesta = resultado
             return {"respuesta": respuesta, "intencion": "consulta_general", "transferir": False}
 
+        self._registrar_no_entendido(mensaje, numero, "consulta_general")
         template = self.mensajes.get("sin_respuesta", "No encontré información.")
         respuesta = self._reemplazar_variables(template)
         return {"respuesta": respuesta, "intencion": "sin_respuesta", "transferir": True}

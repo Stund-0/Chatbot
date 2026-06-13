@@ -1,0 +1,12 @@
+Tu solicitud de cita ha sido recibida ✅
+
+Estamos verificando la disponibilidad y en breve recibirás una confirmación.
+
+📋 *Resumen de tu solicitud:*
+• Especialidad: {{ESPECIALIDAD}}
+• Fecha: {{FECHA}}
+• Hora: {{HORA}}
+• Nombre: {{NOMBRE}}
+• Folio: {{FOLIO}}
+
+*Por favor, espera nuestra confirmación.* Te notificaremos en breve. ⏳
