@@ -1,0 +1,27 @@
+{
+  "name": "chatbot",
+  "version": "1.0.0",
+  "description": "Chatbot inteligente para WhatsApp Business API con agendamiento de citas, reservas de productos y respuestas automáticas. Construido con Flask y desplegable en Railway.",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Stund-0/Chatbot.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Stund-0/Chatbot/issues"
+  },
+  "homepage": "https://github.com/Stund-0/Chatbot#readme",
+  "dependencies": {
+    "railway": "^3.3.1"
+  }
+}

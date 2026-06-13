@@ -8,6 +8,16 @@ _pg_pool = None
 logger = logging.getLogger(__name__)
 
 
+def _build_pg_dsn(raw_url: str) -> str:
+    if "://" in raw_url:
+        return raw_url
+    host, port = raw_url.rsplit(":", 1)
+    user = os.getenv("PGUSER", "postgres")
+    pw = os.getenv("PGPASSWORD", "")
+    db = os.getenv("PGDATABASE", "railway")
+    return f"postgresql://{user}:{pw}@{host}:{port}/{db}"
+
+
 def conectar():
     if DATABASE_URL:
         return _conectar_pg()
@@ -27,6 +37,7 @@ def _conectar_sqlite():
 
 def _conectar_pg():
     global _pg_pool
+    pg_dsn = _build_pg_dsn(DATABASE_URL) if DATABASE_URL else DATABASE_URL
     if _pg_pool is None:
         import psycopg2
         from psycopg2 import pool
@@ -34,7 +45,7 @@ def _conectar_pg():
             _pg_pool = pool.ThreadedConnectionPool(
                 minconn=2,
                 maxconn=10,
-                dsn=DATABASE_URL,
+                dsn=pg_dsn,
                 sslmode="require",
             )
             logger.info("PostgreSQL connection pool created (min=2, max=10)")
@@ -42,7 +53,7 @@ def _conectar_pg():
             logger.warning("Falling back to single connection for PostgreSQL")
             import psycopg2.extras
             conn = psycopg2.connect(
-                DATABASE_URL,
+                pg_dsn,
                 sslmode="require",
                 cursor_factory=psycopg2.extras.RealDictCursor,
             )
