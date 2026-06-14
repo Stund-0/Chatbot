@@ -1,6 +1,6 @@
 # Chatbot WhatsApp — Bitácora
 
-**Última actualización:** Junio 2026  
+**Última actualización:** 14 Junio 2026  
 **URL:** https://web-production-96a9a.up.railway.app  
 **Repo:** https://github.com/Stund-0/Chatbot
 
@@ -22,6 +22,8 @@
 - [x] Modo simulación para desarrollo sin WhatsApp real
 - [x] 22 tests pytest (API + intérprete) — todos pasan
 - [x] 184 tests exhaustivos de intenciones — todas pasan
+- [x] Detección multi-intent (precios+horarios, especialidades+horarios, etc.) — respuestas separadas por mensaje
+- [x] Fix: contexto de agendamiento no secuestra preguntas de info posteriores
 - [x] Logging estructurado JSON (configurable)
 - [x] docker-compose.yml (PostgreSQL + app)
 - [x] CI/CD (GitHub Actions: lint → test → docker build)
@@ -36,6 +38,22 @@
 - [x] Recordatorio automático de citas (endpoint POST /recordatorios)
 - [x] Transferencia notifica al admin, quien contacta al cliente directamente
 - [x] Limpieza de archivos muertos (interprete_avanzado, prompts, wrappers no usados)
+- [x] Detección multi-intent — responde precios+horarios+ubicacion+especialidades en mensajes separados
+- [x] Cita_agendar + info combinados — agendamiento + info en un solo mensaje
+- [x] Fix: contexto de agendamiento no secuestra preguntas de info posteriores
+- [x] Fix: NameError en webhook.py (HTTP 500 → WhatsApp retry → 9 copias)
+- [x] Fix: puntuación (comas) impedía matching de keywords en detección de intención
+- [x] Fix: "lugar/lugares" no disparaban intención ubicacion
+- [x] 184 tests exhaustivos y 22 pytest — todos pasan
+
+## Commits recientes
+
+| Fecha | Hash | Descripción |
+|-------|------|-------------|
+| 14 Jun | `4ac4304` | fix: contexto de agendamiento se resetea al preguntar info |
+| 14 Jun | `f80c0aa` | fix: puntuación, lugar/lugares, cita_agendar junto a info |
+| 14 Jun | `73fdf32` | fix: NameError en webhook.py — duplicación de mensajes |
+| 14 Jun | `0983e06` | feat: detección multi-intent + respuestas múltiples |
 
 ## Pendientes
 
