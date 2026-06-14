@@ -551,12 +551,16 @@ class Chatbot:
             entidades.update(contexto)
 
         ctx_previo = self._obtener_contexto(numero_usuario)
-        if ctx_previo and ctx_previo.get("esperando_datos") and intencion not in self.INTENCIONES_RESET:
-            intencion = ctx_previo["intencion"]
-            entidades_previas = ctx_previo.get("entidades", {})
-            for k, v in entidades_previas.items():
-                if k not in entidades:
-                    entidades[k] = v
+        if ctx_previo and ctx_previo.get("esperando_datos"):
+            if intencion in self.INTENCIONES_INFORMATIVAS:
+                self._guardar_contexto(numero_usuario, None)
+                ctx_previo = None
+            elif intencion not in self.INTENCIONES_RESET:
+                intencion = ctx_previo["intencion"]
+                entidades_previas = ctx_previo.get("entidades", {})
+                for k, v in entidades_previas.items():
+                    if k not in entidades:
+                        entidades[k] = v
 
         self._es_fuera_horario = not self._esta_en_horario_laboral()
 
@@ -568,7 +572,9 @@ class Chatbot:
         if not ctx_previo:
             intenciones_multi = detectar_intenciones_multiples(mensaje_usuario)
             if len(intenciones_multi) >= 2:
-                return self._procesar_intenciones_multiples(intenciones_multi, mensaje_usuario, entidades, numero_usuario, intencion_original=intencion)
+                msg_lower = mensaje_usuario.lower()
+                tiene_cita = ("cita" in msg_lower and "agendar" in msg_lower) or "reservar cita" in msg_lower or "sacar cita" in msg_lower or "pedir cita" in msg_lower or "programar cita" in msg_lower or "necesito una cita" in msg_lower or "quiero una cita" in msg_lower
+                return self._procesar_intenciones_multiples(intenciones_multi, mensaje_usuario, entidades, numero_usuario, intencion_original="cita_agendar" if tiene_cita else None)
 
         gestor_respuesta = {
             "saludo": self._manejar_saludo,
