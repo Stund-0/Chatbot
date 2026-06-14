@@ -52,6 +52,7 @@
 | 14 Jun | `f80c0aa` | fix: puntuación, lugar/lugares, cita_agendar junto a info |
 | 14 Jun | `73fdf32` | fix: NameError en webhook.py — duplicación de mensajes |
 | 14 Jun | `0983e06` | feat: detección multi-intent + respuestas múltiples |
+| 14 Jun | `3920a62` | docs: actualizar bitacora con resumen de sesión, fixes y pendientes |
 
 ## Pendientes
 
@@ -68,6 +69,8 @@
 - [ ] **Pruebas automatizadas del flujo de agendamiento** — no hay tests que cubran multi-turno, `registrar_cita`, confirmación admin
 - [ ] **Manejo de errores en multi-intent** — qué pasa si una de las intenciones múltiples falla (ej: servicio_especifico no encuentra datos)
 - [ ] **Logging de multi-intent** — registrar en `no_entendidos.jsonl` cuando el usuario hace multi-intent pero ninguna intención es reconocida
+- [ ] **Recordatorios usan estado `pendiente` en vez de `confirmada`** — `_enviar_recordatorios` filtra por `pendiente` en lugar de `confirmada`, podría enviar recordatorios de citas no confirmadas
+- [ ] **Fechas disponibles con horarios hardcodeados** — `_manejar_fechas_disponibles` usa slots fijos en el código, ignora el archivo `horarios_disponibles.txt`
 
 ### Prioridad baja
 - [ ] **Rate limiting más granular** — diferenciar límites por número de usuario
