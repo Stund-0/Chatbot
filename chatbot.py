@@ -449,7 +449,7 @@ class Chatbot:
             indicios += 1
         return indicios >= 2
 
-    def _procesar_intenciones_multiples(self, intenciones, mensaje, entidades, numero):
+    def _procesar_intenciones_multiples(self, intenciones, mensaje, entidades, numero, intencion_original=None):
         gestor_respuesta = {
             "horarios": self._manejar_horarios,
             "precios": self._manejar_precios,
@@ -463,6 +463,7 @@ class Chatbot:
         }
 
         respuestas = []
+        esperando_datos = False
         for intencion, _ in intenciones:
             manejador = gestor_respuesta.get(intencion)
             if manejador:
@@ -476,19 +477,60 @@ class Chatbot:
         if not respuestas:
             return self._manejar_consulta_general(mensaje, entidades, numero)
 
-        combined = "\n\n".join(respuestas)
-        combined += self.OFERTA_AGENDAR
+        if intencion_original == "cita_agendar":
+            fecha_detectada = entidades.get("fecha", "")
+            if fecha_detectada:
+                horarios = self._formatear_horarios_disponibles(fecha_detectada)
+                msg_agendar = (
+                    "Claro, con gusto te ayudo a agendar una cita. Por favor, proporciona los siguientes datos:\n\n"
+                    "1. 📝 *Nombre completo*\n"
+                    "2. 📱 *Teléfono de contacto*\n"
+                    "3. 🏥 *Especialidad deseada*\n"
+                    f"4. 📅 *Fecha preferida:* {fecha_detectada}\n"
+                    "5. 🕐 *Horario preferido*\n\n"
+                    f"*Horarios disponibles para el {fecha_detectada}:*\n{horarios}"
+                )
+            else:
+                horarios = self._formatear_horarios_disponibles()
+                msg_agendar = (
+                    "Claro, con gusto te ayudo a agendar una cita. Por favor, proporciona los siguientes datos:\n\n"
+                    "1. 📝 *Nombre completo*\n"
+                    "2. 📱 *Teléfono de contacto*\n"
+                    "3. 🏥 *Especialidad deseada*\n"
+                    "4. 📅 *Fecha preferida (dd/mm/aaaa)*\n"
+                    "5. 🕐 *Horario preferido*\n\n"
+                    f"*Horarios disponibles:*\n{horarios}"
+                )
+            respuestas.append(msg_agendar)
+            esperando_datos = True
+            combined = "\n\n".join(respuestas)
+            respuestas_enviar = list(respuestas)
+        else:
+            combined = "\n\n".join(respuestas)
+            combined += self.OFERTA_AGENDAR
+            respuestas_enviar = list(respuestas)
+            respuestas_enviar.append(self.OFERTA_AGENDAR.strip())
 
-        respuestas_enviar = list(respuestas)
-        respuestas_enviar.append(self.OFERTA_AGENDAR.strip())
-
-        return {
+        resultado = {
             "respuesta": combined,
             "respuestas": respuestas_enviar,
             "intencion": intenciones[0][0],
             "intenciones": [i for i, _ in intenciones],
             "transferir": False,
+            "esperando_datos": esperando_datos,
         }
+
+        if esperando_datos:
+            resultado["intencion"] = "cita_agendar"
+            self._guardar_contexto(numero, {
+                "intencion": "cita_agendar",
+                "entidades": entidades,
+                "esperando_datos": True,
+            })
+        else:
+            self._guardar_contexto(numero, None)
+
+        return resultado
 
     def procesar_mensaje(self, mensaje_usuario, numero_usuario=None, contexto=None):
         resultado_admin = self._manejar_comando_admin(mensaje_usuario, numero_usuario)
@@ -526,7 +568,7 @@ class Chatbot:
         if not ctx_previo:
             intenciones_multi = detectar_intenciones_multiples(mensaje_usuario)
             if len(intenciones_multi) >= 2:
-                return self._procesar_intenciones_multiples(intenciones_multi, mensaje_usuario, entidades, numero_usuario)
+                return self._procesar_intenciones_multiples(intenciones_multi, mensaje_usuario, entidades, numero_usuario, intencion_original=intencion)
 
         gestor_respuesta = {
             "saludo": self._manejar_saludo,

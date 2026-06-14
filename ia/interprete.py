@@ -7,7 +7,7 @@ INTENCIONES = {
     "informacion": ["qué hacen", "qué ofrecen", "información", "informacion", "servicios", "productos", "conocen", "a qué se dedican", "a que se dedican", "qué ofrecen", "que ofrecen", "me pueden decir", "que hacen"],
     "horarios": ["horario", "horarios", "atienden", "abren", "cierran", "cuándo atienden", "días de atención", "días de atención", "dias de atencion", "qué días trabajan", "que dias trabajan", "están abiertos", "estan abiertos"],
     "precios": ["precio", "precios", "cuánto cuesta", "costo", "costos", "tarifa", "valor", "cuesta", "cuanto cuesta", "cuánto vale", "cuanto vale", "cuánto cobran", "cuanto cobran", "cuánto sale", "cuanto sale", "qué precio tiene", "que precio tiene", "precio de", "de precio"],
-    "ubicacion": ["dirección", "ubicación", "ubicacion", "dónde están", "dónde queda", "donde estan", "donde queda", "ubicados", "direccion", "cómo llegar", "como llegar", "mapa", "dónde se ubican", "donde se ubican"],
+    "ubicacion": ["dirección", "ubicación", "ubicacion", "dónde están", "dónde queda", "donde estan", "donde queda", "ubicados", "direccion", "cómo llegar", "como llegar", "mapa", "dónde se ubican", "donde se ubican", "lugar", "lugares", "en qué lugar", "en que lugar", "qué lugar", "que lugar"],
     "cita_agendar": ["agendar", "cita", "consulta", "agenda", "reservar cita", "quiero una cita", "necesito una cita", "programar cita", "sacar cita", "pedir cita"],
     "cita_consultar": ["mi cita", "consultar cita", "ver cita", "estado de mi cita", "tengo una cita", "consulta mi cita", "revisar mi cita", "cómo va mi cita", "como va mi cita", "quiero ver mi cita", "quiero consultar mi cita", "ver mi cita"],
     "cita_cancelar": ["cancelar", "cancelación", "cancelacion", "cancelar cita", "anular cita", "anular"],
@@ -82,7 +82,8 @@ def detectar_intencion(mensaje):
     if not puntajes:
         return "consulta_general"
 
-    palabras_msg = set(mensaje.split())
+    palabras_limpias = re.sub(r'[^\w\s]', '', mensaje)
+    palabras_msg = set(palabras_limpias.split())
     for palabra_clave, intencion_asignada in PALABRAS_CLAVE_DESEMPATE.items():
         if palabra_clave in palabras_msg and intencion_asignada in puntajes:
             puntajes[intencion_asignada] += 5
@@ -143,7 +144,8 @@ def detectar_intenciones_multiples(mensaje):
     if not puntajes:
         return [("consulta_general", 0)]
 
-    palabras_msg = set(mensaje.split())
+    palabras_limpias = re.sub(r'[^\w\s]', '', mensaje)
+    palabras_msg = set(palabras_limpias.split())
     for palabra_clave, intencion_asignada in PALABRAS_CLAVE_DESEMPATE.items():
         if palabra_clave in palabras_msg and intencion_asignada in puntajes:
             puntajes[intencion_asignada] += 5
