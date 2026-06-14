@@ -132,9 +132,11 @@ def notificar_admin(numero_cliente, mensaje_cliente, sender, nombre_cliente=""):
         return resultado
 
     if os.getenv("MODO_SIMULACION", "true").lower() == "true":
-        print(f"\n[NOTIFICACION ADMIN] Para: {admin_telefono}")
-        print(f"[CONTENIDO]: {mensaje}")
-        print("=" * 50)
+        import sys
+        _stdout = sys.stdout.buffer if hasattr(sys.stdout, 'buffer') else sys.stdout
+        _stdout.write(f"\n[NOTIFICACION ADMIN] Para: {admin_telefono}\n".encode("utf-8", errors="replace"))
+        _stdout.write(f"[CONTENIDO]: {mensaje}\n".encode("utf-8", errors="replace"))
+        _stdout.write(("=" * 50 + "\n").encode("utf-8", errors="replace"))
         return {"exito": True, "simulado": True}
 
     return {"exito": False, "error": "No sender available"}

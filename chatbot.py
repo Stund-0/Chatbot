@@ -29,6 +29,7 @@ class Chatbot:
         self._cargar_archivos()
 
     INTENCIONES_RESET = {"saludo", "emergencia", "transferir", "despedida", "cita_cancelar", "faq", "reportes", "gracias"}
+    INTENCIONES_INFORMATIVAS = {"horarios", "precios", "ubicacion", "contacto", "informacion", "servicio_especifico", "faq", "fechas_disponibles", "pago"}
 
     def _obtener_contexto(self, numero):
         if not numero:
@@ -444,16 +445,57 @@ class Chatbot:
             indicios += 1
         if entidades.get("especialidad"):
             indicios += 1
-        if re.search(r'\bnombre\s+', mensaje_lower):
+        if re.search(r'\bnombre\b', mensaje_lower):
             indicios += 1
         return indicios >= 2
+
+    def _procesar_intenciones_multiples(self, intenciones, mensaje, entidades, numero):
+        gestor_respuesta = {
+            "horarios": self._manejar_horarios,
+            "precios": self._manejar_precios,
+            "ubicacion": self._manejar_ubicacion,
+            "contacto": self._manejar_contacto,
+            "informacion": self._manejar_informacion_general,
+            "servicio_especifico": self._manejar_servicio_especifico,
+            "faq": self._manejar_faq,
+            "fechas_disponibles": self._manejar_fechas_disponibles,
+            "pago": self._manejar_pago,
+        }
+
+        respuestas = []
+        for intencion, _ in intenciones:
+            manejador = gestor_respuesta.get(intencion)
+            if manejador:
+                resultado = manejador(mensaje, entidades, numero)
+                texto = resultado["respuesta"]
+                oferta = self.OFERTA_AGENDAR
+                if texto.endswith(oferta):
+                    texto = texto[:-len(oferta)]
+                respuestas.append(texto)
+
+        if not respuestas:
+            return self._manejar_consulta_general(mensaje, entidades, numero)
+
+        combined = "\n\n".join(respuestas)
+        combined += self.OFERTA_AGENDAR
+
+        respuestas_enviar = list(respuestas)
+        respuestas_enviar.append(self.OFERTA_AGENDAR.strip())
+
+        return {
+            "respuesta": combined,
+            "respuestas": respuestas_enviar,
+            "intencion": intenciones[0][0],
+            "intenciones": [i for i, _ in intenciones],
+            "transferir": False,
+        }
 
     def procesar_mensaje(self, mensaje_usuario, numero_usuario=None, contexto=None):
         resultado_admin = self._manejar_comando_admin(mensaje_usuario, numero_usuario)
         if resultado_admin:
             return resultado_admin
 
-        from ia.interprete import detectar_intencion, extraer_entidades
+        from ia.interprete import detectar_intencion, extraer_entidades, detectar_intenciones_multiples
 
         intencion = detectar_intencion(mensaje_usuario)
         entidades = extraer_entidades(mensaje_usuario)
@@ -480,6 +522,11 @@ class Chatbot:
             template = self.mensajes.get("error_formato", "No entendí los datos.")
             respuesta = self._reemplazar_variables(template)
             return {"respuesta": respuesta, "intencion": "error_formato", "transferir": False}
+
+        if not ctx_previo:
+            intenciones_multi = detectar_intenciones_multiples(mensaje_usuario)
+            if len(intenciones_multi) >= 2:
+                return self._procesar_intenciones_multiples(intenciones_multi, mensaje_usuario, entidades, numero_usuario)
 
         gestor_respuesta = {
             "saludo": self._manejar_saludo,

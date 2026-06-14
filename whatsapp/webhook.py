@@ -56,12 +56,12 @@ def recibir_mensaje():
                                 logger.warning(f"Respuesta invalida del chatbot: {respuesta}")
                                 continue
 
-                            texto_respuesta = respuesta["respuesta"]
-                            if not isinstance(texto_respuesta, str):
-                                texto_respuesta = str(texto_respuesta)
+                            textos = respuesta.get("respuestas", [respuesta.get("respuesta", "")])
+                            textos = [str(t) for t in textos if isinstance(t, str) or str(t)]
 
                             if not modo_simulacion and sender:
-                                sender.enviar_texto(from_number, texto_respuesta)
+                                for t in textos:
+                                    sender.enviar_texto(from_number, t)
 
                             if respuesta.get("intencion") == "cita_agendar" and respuesta.get("datos"):
                                 notificar_nueva_cita(

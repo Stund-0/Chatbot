@@ -96,9 +96,11 @@ def chat():
             sender=sender if not MODO_SIMULACION else None,
         )
 
+    respuestas = respuesta.get("respuestas", [respuesta["respuesta"]])
     if MODO_SIMULACION:
         return jsonify({
             "respuesta": respuesta["respuesta"],
+            "respuestas": respuestas,
             "intencion": respuesta.get("intencion"),
             "transferir": respuesta.get("transferir", False),
             "modo": "simulacion",
@@ -108,6 +110,7 @@ def chat():
 
     return jsonify({
         "respuesta": respuesta["respuesta"],
+        "respuestas": respuestas,
         "intencion": respuesta.get("intencion"),
         "transferir": respuesta.get("transferir", False),
         "enviado": True,

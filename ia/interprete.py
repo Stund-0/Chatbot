@@ -14,7 +14,7 @@ INTENCIONES = {
     "reserva_crear": ["reservar", "apartar", "quiero comprar", "ordenar", "pedido", "comprar", "producto", "hacer una reserva"],
     "reserva_consultar": ["mi reserva", "mi pedido", "consultar reserva", "estado de mi pedido", "ver reserva", "consultar mi pedido", "ver mi reserva"],
     "contacto": ["teléfono", "telefono", "correo", "contacto", "comunicarme", "llamar", "email", "whatsapp", "cuál es su número", "cual es su numero", "dónde llamo", "donde llamo"],
-    "servicio_especifico": ["medicina general", "pediatría", "pediatria", "ginecología", "ginecologia", "cardiología", "cardiologia", "dermatología", "dermatologia", "psicología", "psicologia", "especialidad"],
+    "servicio_especifico": ["medicina general", "pediatría", "pediatria", "ginecología", "ginecologia", "cardiología", "cardiologia", "dermatología", "dermatologia", "psicología", "psicologia", "especialidad", "especialidades"],
     "pago": ["pagar", "pago", "métodos de pago", "formas de pago", "transferencia", "tarjeta", "métodos de pago", "formas de pago"],
     "emergencia": ["emergencia", "urgencia", "grave", "accidente", "duele", "ayuda urgente", "necesito ayuda"],
     "transferir": ["persona", "humano", "asesor", "operador", "hablar con alguien", "transferir", "agente", "atención personal", "atencion personal"],
@@ -90,7 +90,7 @@ def detectar_intencion(mensaje):
     ESPECIALIDADES = [
         "medicina", "pediatria", "pediatría", "ginecologia", "ginecología",
         "cardiologia", "cardiología", "dermatologia", "dermatología",
-        "psicologia", "psicología", "especialidad",
+        "psicologia", "psicología", "especialidad", "especialidades",
     ]
     if "servicio_especifico" in puntajes:
         for esp in ESPECIALIDADES:
@@ -120,6 +120,74 @@ def detectar_intencion(mensaje):
                 return ref
 
     return candidatos[0]
+
+
+INTENCIONES_INFORMATIVAS = {"horarios", "precios", "ubicacion", "contacto", "informacion", "servicio_especifico", "faq", "fechas_disponibles", "pago"}
+
+
+def detectar_intenciones_multiples(mensaje):
+    mensaje = mensaje.lower().strip()
+    puntajes = {}
+
+    for intencion, patrones in INTENCIONES.items():
+        puntaje = 0
+        for patron in patrones:
+            if _coincide_patron(patron, mensaje):
+                puntaje += len(patron.split())
+            palabras_patron = patron.split()
+            if mensaje.startswith(patron) and (len(palabras_patron) > 1 or len(mensaje) < len(patron) + 10):
+                puntaje += len(palabras_patron) * 2
+        if puntaje > 0:
+            puntajes[intencion] = puntaje
+
+    if not puntajes:
+        return [("consulta_general", 0)]
+
+    palabras_msg = set(mensaje.split())
+    for palabra_clave, intencion_asignada in PALABRAS_CLAVE_DESEMPATE.items():
+        if palabra_clave in palabras_msg and intencion_asignada in puntajes:
+            puntajes[intencion_asignada] += 5
+
+    ESPECIALIDADES = [
+        "medicina", "pediatria", "pediatría", "ginecologia", "ginecología",
+        "cardiologia", "cardiología", "dermatologia", "dermatología",
+        "psicologia", "psicología", "especialidad", "especialidades",
+    ]
+    if "servicio_especifico" in puntajes:
+        for esp in ESPECIALIDADES:
+            if esp in palabras_msg:
+                puntajes["servicio_especifico"] += 3
+                break
+
+    informativas = [(k, v) for k, v in puntajes.items() if k in INTENCIONES_INFORMATIVAS]
+
+    if len(informativas) >= 2:
+        result = [(k, v) for k, v in informativas if v >= 1]
+        if len(result) >= 2:
+            orden = ["servicio_especifico", "pago", "horarios", "precios", "ubicacion", "contacto", "informacion", "faq", "fechas_disponibles"]
+            result.sort(key=lambda x: (-x[1], orden.index(x[0]) if x[0] in orden else 999))
+            return result
+
+    max_puntaje = max(puntajes.values())
+    candidatos = [k for k, v in puntajes.items() if v == max_puntaje]
+    if len(candidatos) > 1:
+        orden = [
+            "cita_cancelar", "cita_agendar",
+            "reserva_crear",
+            "servicio_especifico",
+            "emergencia", "transferir",
+            "reportes",
+            "pago", "horarios", "precios", "ubicacion", "contacto",
+            "informacion", "faq",
+            "fechas_disponibles",
+            "cita_consultar", "reserva_consultar",
+            "saludo", "gracias", "despedida",
+            "consulta_general",
+        ]
+        for ref in orden:
+            if ref in candidatos:
+                return [(ref, max_puntaje)]
+    return [(candidatos[0], max_puntaje)]
 
 
 def extraer_entidades(mensaje):
@@ -166,7 +234,7 @@ def extraer_entidades(mensaje):
         entidades["telefono"] = telefono_match.group(1).strip()
 
     nombre_patterns = [
-        r"(?:llamo|soy|nombre es|me llamo|mi nombre es|nombre)\s+([A-Za-zÁáÉéÍíÓóÚúÑñ\s]+?)(?:\.|,|$|y\s+mi\s+teléfono)",
+        r"(?:llamo|soy|nombre es|me llamo|mi nombre es|nombre)\s*:?\s*([A-Za-zÁáÉéÍíÓóÚúÑñ\s]+?)(?:\.|,|telefono|teléfono|especialidad|fecha|horario|$)",
         r"(?:soy)\s+([A-Za-zÁáÉéÍíÓóÚúÑñ\s]+?)$",
     ]
     for pattern in nombre_patterns:

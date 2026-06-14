@@ -6,9 +6,11 @@ class MessageHandler:
         self.sender = sender
 
     def manejar_mensaje_entrante(self, numero, mensaje, respuesta_chatbot):
-        texto_respuesta = respuesta_chatbot.get("respuesta", "")
+        textos = respuesta_chatbot.get("respuestas", [respuesta_chatbot.get("respuesta", "")])
+        textos = [str(t) for t in textos if isinstance(t, str) or str(t)]
         transferir = respuesta_chatbot.get("transferir", False)
 
-        self.sender.enviar_texto(numero, texto_respuesta)
+        for texto in textos:
+            self.sender.enviar_texto(numero, texto)
 
-        return {"numero": numero, "respuesta_enviada": True, "transferir": transferir}
+        return {"numero": numero, "respuestas_enviadas": len(textos), "transferir": transferir}
