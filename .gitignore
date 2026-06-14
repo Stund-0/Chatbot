@@ -3,6 +3,3 @@ __pycache__/
 *.db
 *.db-journal
 *.db-wal
-.railway-config-pull-3000/
-check_env.js
-railway_query.gql

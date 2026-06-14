@@ -28,12 +28,20 @@
 - [x] Dockerfile con usuario no-root + healthcheck
 - [x] Fix fuera_horario: agenda 24/7, transfer notifica admin fuera de horario
 - [x] README con documentación completa
+- [x] Reconocimiento de texto libre con formato "nombre X, telefono Y, especialidad Z, fecha W, horario V"
+- [x] Validación de formato en datos de cita (teléfono, fecha no pasada, hora)
+- [x] Pregunta "¿Te gustaría agendar?" después de dar info (precios, horarios, servicios)
+- [x] Lista de especialidades disponibles cuando se pregunta "especialidad"
+- [x] Cancelación redirige a contacto directo con admin
+- [x] Recordatorio automático de citas (endpoint POST /recordatorios)
+- [x] Transferencia notifica al admin, quien contacta al cliente directamente
+- [x] Limpieza de archivos muertos (interprete_avanzado, prompts, wrappers no usados)
 
 ## Pendientes
 
-- [ ] **Personalizar datos del negocio** — `datos/*.txt`, `mensajes/*.txt`, `config/empresa.txt` (tuyo)
+- [ ] **Personalizar datos del negocio** — `datos/*.txt`, `mensajes/*.txt`, `config/empresa.txt`
 - [ ] **Configurar Railway:**
   - Agregar `DATABASE_URL` (PostgreSQL plugin)
   - Configurar `ADMIN_TELEFONO` para notificaciones
   - Configurar `REPORTES_API_KEY`
-- [ ] **Probar en Railway** — verificar webhook, flujo completo agendar→confirmar→usuario
+- [ ] **Probar en Railway** — verificar webhook, flujo completo agendar→confirmar→usuario, handoff con admin

@@ -326,92 +326,127 @@ class Chatbot:
         if len(cmd_parts) != 2:
             return None
 
-        comando, folio = cmd_parts
+        comando, argumento = cmd_parts
         comando = comando.upper()
-        folio = folio.strip()
+        argumento = argumento.strip()
 
-        if comando not in ("CONFIRMAR", "RECHAZAR"):
-            return None
-
-        cita = buscar_cita_por_folio(folio)
-        if not cita:
-            return {
-                "respuesta": f"No encontré ninguna cita con folio {folio}.",
-                "intencion": "admin_comando",
-                "transferir": False,
-            }
-
-        if comando == "CONFIRMAR":
-            exito = confirmar_cita(folio)
-            if exito:
-                msg_usuario = (
-                    f"✅ *Tu cita ha sido confirmada!*\n\n"
-                    f"▪️ *Folio:* {cita['folio']}\n"
-                    f"▪️ *Especialidad:* {cita['especialidad']}\n"
-                    f"▪️ *Fecha:* {cita['fecha']}\n"
-                    f"▪️ *Hora:* {cita['hora']}\n\n"
-                    f"Te esperamos! 🏥"
-                )
-                from whatsapp.sender import WhatsAppSender
-                sender = WhatsAppSender(
-                    token=self.config.get("whatsapp_token", os.getenv("WHATSAPP_TOKEN", "")),
-                    phone_id=self.config.get("whatsapp_phone_id", os.getenv("WHATSAPP_PHONE_ID", "")),
-                )
-                if self.modo_simulacion:
-                    print(f"\n[ENVIANDO CONFIRMACION A USUARIO {cita['telefono']}]: {msg_usuario}\n")
+        if comando in ("CONFIRMAR", "RECHAZAR"):
+            cita = buscar_cita_por_folio(argumento)
+            if not cita:
+                return {
+                    "respuesta": f"No encontré ninguna cita con folio {argumento}.",
+                    "intencion": "admin_comando",
+                    "transferir": False,
+                }
+            if comando == "CONFIRMAR":
+                exito = confirmar_cita(argumento)
+                if exito:
+                    msg_usuario = (
+                        f"✅ *Tu cita ha sido confirmada!*\n\n"
+                        f"▪️ *Folio:* {cita['folio']}\n"
+                        f"▪️ *Especialidad:* {cita['especialidad']}\n"
+                        f"▪️ *Fecha:* {cita['fecha']}\n"
+                        f"▪️ *Hora:* {cita['hora']}\n\n"
+                        f"Te esperamos! 🏥"
+                    )
+                    from whatsapp.sender import WhatsAppSender
+                    sender = WhatsAppSender(
+                        token=self.config.get("whatsapp_token", os.getenv("WHATSAPP_TOKEN", "")),
+                        phone_id=self.config.get("whatsapp_phone_id", os.getenv("WHATSAPP_PHONE_ID", "")),
+                    )
+                    if self.modo_simulacion:
+                        print(f"\n[ENVIANDO CONFIRMACION A USUARIO {cita['telefono']}]: {msg_usuario}\n")
+                    else:
+                        sender.enviar_texto(cita["telefono"], msg_usuario)
+                    return {
+                        "respuesta": f"✅ Cita {argumento} confirmada. El usuario ha sido notificado.",
+                        "intencion": "admin_comando",
+                        "transferir": False,
+                    }
                 else:
-                    sender.enviar_texto(cita["telefono"], msg_usuario)
-
-                return {
-                    "respuesta": f"✅ Cita {folio} confirmada. El usuario ha sido notificado.",
-                    "intencion": "admin_comando",
-                    "transferir": False,
-                }
-            else:
-                return {
-                    "respuesta": f"No se pudo confirmar la cita {folio}. Verifica que esté en estado 'pendiente_confirmacion'.",
-                    "intencion": "admin_comando",
-                    "transferir": False,
-                }
-
-        if comando == "RECHAZAR":
-            exito = rechazar_cita(folio)
-            if exito:
-                horarios = self._formatear_horarios_disponibles(cita["fecha"])
-                msg_usuario = (
-                    f"⚠️ *Cita no disponible*\n\n"
-                    f"Lo sentimos, la hora solicitada para el {cita['fecha']} a las {cita['hora']} "
-                    f"ya no está disponible.\n\n"
-                    f"*Horarios disponibles para esa fecha:*\n{horarios}\n\n"
-                    f"Por favor, elige un nuevo horario y vuelve a solicitarlo. 🙏"
-                )
-                from whatsapp.sender import WhatsAppSender
-                sender = WhatsAppSender(
-                    token=self.config.get("whatsapp_token", os.getenv("WHATSAPP_TOKEN", "")),
-                    phone_id=self.config.get("whatsapp_phone_id", os.getenv("WHATSAPP_PHONE_ID", "")),
-                )
-                if self.modo_simulacion:
-                    print(f"\n[ENVIANDO RECHAZO A USUARIO {cita['telefono']}]: {msg_usuario}\n")
+                    return {
+                        "respuesta": f"No se pudo confirmar la cita {argumento}. Verifica que esté en estado 'pendiente_confirmacion'.",
+                        "intencion": "admin_comando",
+                        "transferir": False,
+                    }
+            if comando == "RECHAZAR":
+                exito = rechazar_cita(argumento)
+                if exito:
+                    horarios = self._formatear_horarios_disponibles(cita["fecha"])
+                    msg_usuario = (
+                        f"⚠️ *Cita no disponible*\n\n"
+                        f"Lo sentimos, la hora solicitada para el {cita['fecha']} a las {cita['hora']} "
+                        f"ya no está disponible.\n\n"
+                        f"*Horarios disponibles para esa fecha:*\n{horarios}\n\n"
+                        f"Por favor, elige un nuevo horario y vuelve a solicitarlo. 🙏"
+                    )
+                    from whatsapp.sender import WhatsAppSender
+                    sender = WhatsAppSender(
+                        token=self.config.get("whatsapp_token", os.getenv("WHATSAPP_TOKEN", "")),
+                        phone_id=self.config.get("whatsapp_phone_id", os.getenv("WHATSAPP_PHONE_ID", "")),
+                    )
+                    if self.modo_simulacion:
+                        print(f"\n[ENVIANDO RECHAZO A USUARIO {cita['telefono']}]: {msg_usuario}\n")
+                    else:
+                        sender.enviar_texto(cita["telefono"], msg_usuario)
+                    return {
+                        "respuesta": f"❌ Cita {argumento} rechazada. El usuario ha sido notificado con horarios disponibles.",
+                        "intencion": "admin_comando",
+                        "transferir": False,
+                    }
                 else:
-                    sender.enviar_texto(cita["telefono"], msg_usuario)
+                    return {
+                        "respuesta": f"No se pudo rechazar la cita {argumento}. Verifica que esté en estado 'pendiente_confirmacion'.",
+                        "intencion": "admin_comando",
+                        "transferir": False,
+                    }
 
-                return {
-                    "respuesta": f"❌ Cita {folio} rechazada. El usuario ha sido notificado con horarios disponibles.",
-                    "intencion": "admin_comando",
-                    "transferir": False,
-                }
-            else:
-                return {
-                    "respuesta": f"No se pudo rechazar la cita {folio}. Verifica que esté en estado 'pendiente_confirmacion'.",
-                    "intencion": "admin_comando",
-                    "transferir": False,
-                }
+        return None
+
+    OFERTA_AGENDAR = "\n\n¿Te gustaría agendar una cita? Solo envíame tus datos: nombre, teléfono, especialidad, fecha y horario."
+
+    def _validar_datos_cita(self, entidades):
+        errores = []
+        telefono = entidades.get("telefono", "")
+        if telefono and not re.match(r'^\+?\d{8,15}$', telefono.replace(" ", "")):
+            errores.append("teléfono (debe tener entre 8 y 15 dígitos)")
+        fecha = entidades.get("fecha", "")
+        if fecha:
+            try:
+                fecha_dt = datetime.strptime(fecha, "%d/%m/%Y")
+                if fecha_dt.date() < datetime.now().date():
+                    errores.append("fecha (no puede ser una fecha pasada)")
+            except ValueError:
+                errores.append("fecha (formato inválido, usa dd/mm/aaaa)")
+        hora = entidades.get("hora", "")
+        if hora and not re.match(r'^\d{1,2}:\d{2}\s*(AM|PM|am|pm)?$', hora.strip()):
+            errores.append("hora (formato inválido, usa HH:MM AM/PM)")
+        return errores
 
     def _datos_completos_para_cita(self, entidades):
         return all(entidades.get(k) for k in ("nombre", "especialidad", "fecha", "hora"))
 
     def _datos_completos_para_reserva(self, entidades):
         return all(entidades.get(k) for k in ("nombre", "producto"))
+
+    def _detectar_datos_incompletos_cita(self, mensaje, entidades, intencion):
+        if intencion in self.INTENCIONES_RESET:
+            return False
+        if self._datos_completos_para_cita(entidades):
+            return False
+        mensaje_lower = mensaje.lower()
+        indicios = 0
+        if entidades.get("telefono"):
+            indicios += 1
+        if entidades.get("fecha"):
+            indicios += 1
+        if entidades.get("hora"):
+            indicios += 1
+        if entidades.get("especialidad"):
+            indicios += 1
+        if re.search(r'\bnombre\s+', mensaje_lower):
+            indicios += 1
+        return indicios >= 2
 
     def procesar_mensaje(self, mensaje_usuario, numero_usuario=None, contexto=None):
         resultado_admin = self._manejar_comando_admin(mensaje_usuario, numero_usuario)
@@ -440,6 +475,11 @@ class Chatbot:
                     entidades[k] = v
 
         self._es_fuera_horario = not self._esta_en_horario_laboral()
+
+        if not ctx_previo and self._detectar_datos_incompletos_cita(mensaje_usuario, entidades, intencion):
+            template = self.mensajes.get("error_formato", "No entendí los datos.")
+            respuesta = self._reemplazar_variables(template)
+            return {"respuesta": respuesta, "intencion": "error_formato", "transferir": False}
 
         gestor_respuesta = {
             "saludo": self._manejar_saludo,
@@ -500,6 +540,7 @@ class Chatbot:
             if precio:
                 respuesta += f"\n💰 *Precio:* {precio.split(':', 1)[1].strip() if ':' in precio else precio}"
             if respuesta:
+                respuesta += self.OFERTA_AGENDAR
                 return {"respuesta": respuesta, "intencion": "informacion", "transferir": False}
 
         info = self.datos.get("informacion", "")
@@ -510,6 +551,7 @@ class Chatbot:
             respuesta = self._reemplazar_variables(
                 self.mensajes.get("sin_respuesta", "No tengo esa información.")
             )
+        respuesta += self.OFERTA_AGENDAR
         return {"respuesta": respuesta, "intencion": "informacion", "transferir": False}
 
     def _manejar_fechas_disponibles(self, mensaje, entidades, numero):
@@ -584,6 +626,7 @@ class Chatbot:
             respuesta = self._reemplazar_variables(
                 self.mensajes.get("sin_respuesta", "No tengo esa información.")
             )
+        respuesta += self.OFERTA_AGENDAR
         return {"respuesta": respuesta, "intencion": "horarios", "transferir": False}
 
     def _manejar_precios(self, mensaje, entidades, numero):
@@ -607,6 +650,7 @@ class Chatbot:
             else:
                 respuesta = "No tengo información de precios disponible."
 
+        respuesta += self.OFERTA_AGENDAR
         return {"respuesta": respuesta, "intencion": "precios", "transferir": False}
 
     def _manejar_ubicacion(self, mensaje, entidades, numero):
@@ -646,6 +690,15 @@ class Chatbot:
                     f"*Horarios disponibles:*\n{horarios}"
                 )
             return {"respuesta": respuesta, "intencion": "cita_agendar", "transferir": False, "esperando_datos": True}
+
+        errores = self._validar_datos_cita(entidades)
+        if errores:
+            respuesta = (
+                "Los datos tienen los siguientes errores:\n\n"
+                + "\n".join(f"❌ {e}" for e in errores)
+                + "\n\nPor favor, corrije los datos e intenta de nuevo."
+            )
+            return {"respuesta": respuesta, "intencion": "cita_agendar", "transferir": False}
 
         from database.consultas import registrar_cita
         resultado = registrar_cita(
@@ -696,36 +749,12 @@ class Chatbot:
         return {"respuesta": respuesta, "intencion": "cita_consultar", "transferir": False}
 
     def _manejar_cancelar_cita(self, mensaje, entidades, numero):
-        from database.consultas import cancelar_cita, buscar_cita_por_telefono
-
-        if entidades.get("folio"):
-            exito = cancelar_cita(entidades["folio"])
-            if exito:
-                variables = {"folio_cancelacion": entidades["folio"]}
-                template = self.mensajes.get("cancelacion", "Cita cancelada.")
-                respuesta = self._reemplazar_variables(template, variables)
-                return {"respuesta": respuesta, "intencion": "cita_cancelar", "transferir": False}
-            else:
-                respuesta = "No se pudo cancelar la cita. Verifica el folio e intenta de nuevo."
-                return {"respuesta": respuesta, "intencion": "cita_cancelar", "transferir": False}
-
-        telefono_buscar = entidades.get("telefono") or numero
-        if telefono_buscar:
-            citas = buscar_cita_por_telefono(telefono_buscar)
-            if citas:
-                pendientes = [c for c in citas if c["estado"] == "pendiente"]
-                if pendientes:
-                    respuesta = "Tienes las siguientes citas. Indica el *folio* de la que deseas cancelar:\n\n"
-                    for c in pendientes:
-                        respuesta += f"▪️ *Folio:* {c['folio']} - {c['especialidad']} ({c['fecha']} {c['hora']})\n"
-                else:
-                    respuesta = "No tienes citas pendientes para cancelar."
-            else:
-                respuesta = "No encontré citas registradas. Proporciona tu folio de cita para cancelarla."
-        else:
-            respuesta = "Para cancelar tu cita, proporciona el *folio* que te fue asignado."
-
-        return {"respuesta": respuesta, "intencion": "cita_cancelar", "transferir": False}
+        respuesta = (
+            "Para cancelar una cita, por favor contacta directamente con nuestro equipo "
+            "para que podamos atenderte personalmente.\n\n"
+            "Te transferiré con un administrador para gestionar la cancelación."
+        )
+        return {"respuesta": respuesta, "intencion": "cita_cancelar", "transferir": True}
 
     def _manejar_crear_reserva(self, mensaje, entidades, numero):
         if not entidades.get("nombre"):
@@ -804,9 +833,23 @@ class Chatbot:
         if precio:
             respuesta += f"\n💰 *Precio:* {precio.split(':', 1)[1].strip() if ':' in precio else precio}"
         if not respuesta:
-            respuesta = self._reemplazar_variables(
-                self.mensajes.get("sin_respuesta", "No tengo información específica.")
-            )
+            servicios_raw = self.datos.get("servicios", "")
+            especialidades = []
+            for linea in servicios_raw.split("\n"):
+                if linea.startswith("Servicio:"):
+                    especialidades.append(linea.replace("Servicio:", "").strip())
+            if especialidades:
+                respuesta = (
+                    "🏥 *Especialidades disponibles:*\n\n"
+                    + "\n".join(f"▪️ {e}" for e in especialidades)
+                    + "\n\n¿Sobre cuál te gustaría más información?"
+                )
+            else:
+                respuesta = self._reemplazar_variables(
+                    self.mensajes.get("sin_respuesta", "No tengo información específica.")
+                )
+        else:
+            respuesta += self.OFERTA_AGENDAR
         return {"respuesta": respuesta, "intencion": "servicio_especifico", "transferir": False}
 
     def _manejar_pago(self, mensaje, entidades, numero):
@@ -898,6 +941,42 @@ class Chatbot:
             respuesta += "  No hay reservas registradas.\n"
 
         return {"respuesta": respuesta, "intencion": "reportes", "transferir": False}
+
+    def obtener_citas_confirmadas_manana(self):
+        from database.consultas import listar_citas
+        manana = (datetime.now() + timedelta(days=1)).strftime("%d/%m/%Y")
+        citas = listar_citas(estado="pendiente")
+        return [c for c in citas if c.get("fecha") == manana]
+
+    def _enviar_recordatorios(self):
+        from whatsapp.sender import WhatsAppSender
+        citas_manana = self.obtener_citas_confirmadas_manana()
+        if not citas_manana:
+            return {"enviados": 0, "mensaje": "No hay citas para mañana"}
+        sender = WhatsAppSender(
+            token=self.config.get("whatsapp_token", os.getenv("WHATSAPP_TOKEN", "")),
+            phone_id=self.config.get("whatsapp_phone_id", os.getenv("WHATSAPP_PHONE_ID", "")),
+        )
+        enviados = 0
+        for cita in citas_manana:
+            msg = (
+                f"🔔 *Recordatorio de cita médica*\n\n"
+                f"Estimado/a {cita['nombre']}, te recordamos que tienes una cita mañana:\n\n"
+                f"▪️ *Especialidad:* {cita.get('especialidad', 'N/A')}\n"
+                f"▪️ *Fecha:* {cita['fecha']}\n"
+                f"▪️ *Hora:* {cita['hora']}\n"
+                f"▪️ *Folio:* {cita['folio']}\n\n"
+                "Te esperamos. Si no puedes asistir, contacta a nuestro equipo para reagendar."
+            )
+            if self.modo_simulacion:
+                print(f"\n[RECORDATORIO] Para: {cita['telefono']}")
+                print(f"[MENSAJE]: {msg}\n")
+                enviados += 1
+            else:
+                resultado = sender.enviar_texto(cita["telefono"], msg)
+                if resultado.get("exito"):
+                    enviados += 1
+        return {"enviados": enviados, "total": len(citas_manana)}
 
     def _registrar_no_entendido(self, mensaje, numero=None, intencion=None):
         import json

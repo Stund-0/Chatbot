@@ -1,9 +1,8 @@
-Lo siento, no pude entender bien tu solicitud. ¿Podrías intentar de nuevo con otra forma de decirlo?
+No entendí bien los datos de la cita.
 
-Recuerda que puedo ayudarte con:
-• Agendar citas
-• Información de servicios y precios
-• Horarios y ubicación
-• Preguntas frecuentes
+Por favor ingresa los datos en el siguiente formato:
 
-¿En qué más puedo apoyarte?
+"nombre: [tu nombre], telefono: [tu telefono], especialidad: [especialidad], fecha: [dd/mm/aaaa], horario: [HH:MM AM/PM]"
+
+Ejemplo:
+nombre oliver, telefono 75828084, especialidad cardiologia, fecha 15/06/2026, horario 12:00 PM

@@ -80,6 +80,22 @@ def chat():
         "transferir": respuesta.get("transferir", False),
     })
 
+    from whatsapp.notificaciones import notificar_nueva_cita, notificar_admin
+
+    if respuesta.get("intencion") == "cita_agendar" and respuesta.get("datos"):
+        notificar_nueva_cita(
+            respuesta["datos"],
+            sender if not MODO_SIMULACION else None,
+            pendiente_confirmacion=respuesta.get("pendiente_confirmacion", False),
+        )
+
+    if respuesta.get("transferir"):
+        notificar_admin(
+            numero_cliente=numero,
+            mensaje_cliente=mensaje,
+            sender=sender if not MODO_SIMULACION else None,
+        )
+
     if MODO_SIMULACION:
         return jsonify({
             "respuesta": respuesta["respuesta"],
@@ -156,6 +172,14 @@ def reportes_reservas():
             for r in reservas
         ],
     })
+
+
+@app.route("/recordatorios", methods=["POST"])
+@requerir_api_key
+def recordatorios():
+    chatbot = app.config["chatbot"]
+    resultado = chatbot._enviar_recordatorios()
+    return jsonify(resultado)
 
 
 app.register_blueprint(webhook_bp)

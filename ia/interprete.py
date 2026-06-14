@@ -166,7 +166,7 @@ def extraer_entidades(mensaje):
         entidades["telefono"] = telefono_match.group(1).strip()
 
     nombre_patterns = [
-        r"(?:llamo|soy|nombre es|me llamo|mi nombre es)\s+([A-Za-zÁáÉéÍíÓóÚúÑñ\s]+?)(?:\.|,|$|y\s+mi\s+teléfono)",
+        r"(?:llamo|soy|nombre es|me llamo|mi nombre es|nombre)\s+([A-Za-zÁáÉéÍíÓóÚúÑñ\s]+?)(?:\.|,|$|y\s+mi\s+teléfono)",
         r"(?:soy)\s+([A-Za-zÁáÉéÍíÓóÚúÑñ\s]+?)$",
     ]
     for pattern in nombre_patterns:

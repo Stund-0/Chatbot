@@ -1,7 +1,0 @@
-const vars = [
-  'DATABASE_URL','DATABASE_PUBLIC_URL','PGHOST','PGPORT',
-  'PGUSER','PGPASSWORD','PGDATABASE','POSTGRES_DB',
-  'POSTGRES_PASSWORD','POSTGRES_USER','RAILWAY_TCP_PROXY_DOMAIN',
-  'RAILWAY_TCP_PROXY_PORT'
-];
-vars.forEach(v => console.log(v + '=' + (process.env[v] || 'NOT_SET')));
