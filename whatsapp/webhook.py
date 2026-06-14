@@ -80,7 +80,7 @@ def recibir_mensaje():
                             mensajes_procesados.append({
                                 "numero": from_number,
                                 "mensaje": text_body,
-                                "respuesta": texto_respuesta[:100],
+                                "respuesta": respuesta.get("respuesta", "")[:100],
                                 "intencion": respuesta.get("intencion"),
                                 "transferir": respuesta.get("transferir", False),
                             })
