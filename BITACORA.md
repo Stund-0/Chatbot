@@ -58,6 +58,11 @@
 - [x] `cursor_factory=RealDictCursor` en pool PostgreSQL — corrige 500 al agendar citas en Railway
 - [x] try/except en `/chat` — errores se loggean sin devolver 500 al cliente
 - [x] Redis instalado y probado localmente (58 tests + rate limiting funcional)
+- [x] Pool size configurable via `PG_POOL_MIN`/`PG_POOL_MAX` (antes hardcodeado 2/10)
+- [x] Zona horaria configurable via `TZ` (antes hardcodeada Mexico_City)
+- [x] Horario laboral configurable via `HORARIO_WEEKDAY`/`HORARIO_SATURDAY` (antes hardcodeado 8-18/9-14)
+- [x] Gunicorn workers/timeout configurables via `GUNICORN_WORKERS`/`GUNICORN_TIMEOUT`
+- [x] `node_modules/` eliminado del repo (493 archivos, ~93k líneas) + `.gitignore` actualizado
 
 ## Commits recientes
 
@@ -94,5 +99,5 @@
 - [ ] **Zona horaria hardcodeada** `America/Mexico_City` en `chatbot.py:11`
 - [ ] **Horario laboral hardcodeado** 8-18 weekdays, 9-14 Sat en `chatbot.py:260-264`
 - [ ] **Gunicorn workers/timeout hardcodeados** en `run.py:12-13`
-- [ ] **`node_modules/` y `venv/` commiteados** — limpiar con `.gitignore` + `git rm -r --cached`
+- [x] **`node_modules/` y `venv/` commiteados** — limpiado (`node_modules/` eliminado, 93k líneas menos en repo)
 - [ ] **Notificaciones por email** — no existe sistema de reporte por email
