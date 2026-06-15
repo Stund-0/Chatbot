@@ -200,8 +200,9 @@ def reportes_reservas():
 
 app.register_blueprint(webhook_bp)
 
+inicializar_db()
+logger.info(f"Chatbot iniciado en modo {'SIMULACION' if MODO_SIMULACION else 'PRODUCCION'}")
+
 if __name__ == "__main__":
-    inicializar_db()
-    logger.info(f"Chatbot iniciado en modo {'SIMULACION' if MODO_SIMULACION else 'PRODUCCION'}")
     logger.info(f"Servidor en http://0.0.0.0:{PUERTO}")
     app.run(host="0.0.0.0", port=PUERTO, debug=DEBUG)
