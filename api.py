@@ -94,7 +94,11 @@ def chat():
     contexto = data.get("contexto")
 
     logger.info("Chat request", extra={"numero": numero, "intencion": ""})
-    respuesta = chatbot.procesar_mensaje(mensaje, numero, contexto)
+    try:
+        respuesta = chatbot.procesar_mensaje(mensaje, numero, contexto)
+    except Exception as e:
+        logger.exception("Error en procesar_mensaje: %s", e)
+        return jsonify({"error": f"Error interno: {str(e)}"}), 500
     logger.info("Chat response", extra={
         "numero": numero,
         "intencion": respuesta.get("intencion"),
@@ -104,18 +108,24 @@ def chat():
     from whatsapp.notificaciones import notificar_nueva_cita, notificar_admin
 
     if respuesta.get("intencion") == "cita_agendar" and respuesta.get("datos"):
-        notificar_nueva_cita(
-            respuesta["datos"],
-            sender if not MODO_SIMULACION else None,
-            pendiente_confirmacion=respuesta.get("pendiente_confirmacion", False),
-        )
+        try:
+            notificar_nueva_cita(
+                respuesta["datos"],
+                sender if not MODO_SIMULACION else None,
+                pendiente_confirmacion=respuesta.get("pendiente_confirmacion", False),
+            )
+        except Exception as e:
+            logger.exception("Error al notificar nueva cita: %s", e)
 
     if respuesta.get("transferir"):
-        notificar_admin(
-            numero_cliente=numero,
-            mensaje_cliente=mensaje,
-            sender=sender if not MODO_SIMULACION else None,
-        )
+        try:
+            notificar_admin(
+                numero_cliente=numero,
+                mensaje_cliente=mensaje,
+                sender=sender if not MODO_SIMULACION else None,
+            )
+        except Exception as e:
+            logger.exception("Error al notificar admin: %s", e)
 
     respuestas = respuesta.get("respuestas", [respuesta["respuesta"]])
     if MODO_SIMULACION:
@@ -127,7 +137,10 @@ def chat():
             "modo": "simulacion",
         })
 
-    msg_handler.manejar_mensaje_entrante(numero, mensaje, respuesta)
+    try:
+        msg_handler.manejar_mensaje_entrante(numero, mensaje, respuesta)
+    except Exception as e:
+        logger.exception("Error al enviar mensaje WhatsApp: %s", e)
 
     return jsonify({
         "respuesta": respuesta["respuesta"],
