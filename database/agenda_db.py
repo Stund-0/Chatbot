@@ -48,13 +48,15 @@ def _conectar_pg():
                     import psycopg2.extras
                     from psycopg2 import pool
                     _pg_pool = pool.ThreadedConnectionPool(
-                        minconn=2,
-                        maxconn=10,
+                        minconn=int(os.getenv("PG_POOL_MIN", "2")),
+                        maxconn=int(os.getenv("PG_POOL_MAX", "10")),
                         dsn=pg_dsn,
                         sslmode="require",
                         cursor_factory=psycopg2.extras.RealDictCursor,
                     )
-                    logger.info("PostgreSQL connection pool created (min=2, max=10)")
+                    logger.info("PostgreSQL connection pool created (min=%s, max=%s)",
+                                os.getenv("PG_POOL_MIN", "2"),
+                                os.getenv("PG_POOL_MAX", "10"))
                 except Exception:
                     logger.warning("Falling back to single connection for PostgreSQL")
                     import psycopg2.extras

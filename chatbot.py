@@ -8,7 +8,7 @@ import pytz
 
 logger = logging.getLogger(__name__)
 
-ZONA_HORARIA = pytz.timezone("America/Mexico_City")
+ZONA_HORARIA = pytz.timezone(os.getenv("TZ", "America/Mexico_City"))
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -257,10 +257,19 @@ class Chatbot:
         dia_semana = ahora.weekday()
         hora_actual = ahora.hour + ahora.minute / 60
 
+        def _parse_hour_range(val):
+            parts = val.split("-", 1)
+            return float(parts[0]), float(parts[1])
+
+        weekday_range = os.getenv("HORARIO_WEEKDAY", "8-18")
+        saturday_range = os.getenv("HORARIO_SATURDAY", "9-14")
+        weekday_start, weekday_end = _parse_hour_range(weekday_range)
+        saturday_start, saturday_end = _parse_hour_range(saturday_range)
+
         if dia_semana < 5:
-            return 8 <= hora_actual < 18
+            return weekday_start <= hora_actual < weekday_end
         elif dia_semana == 5:
-            return 9 <= hora_actual < 14
+            return saturday_start <= hora_actual < saturday_end
         else:
             return False
 

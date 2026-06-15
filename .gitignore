@@ -3,3 +3,12 @@ __pycache__/
 *.db
 *.db-journal
 *.db-wal
+venv/
+.venv/
+node_modules/
+.env
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+
