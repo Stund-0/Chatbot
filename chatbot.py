@@ -483,6 +483,7 @@ class Chatbot:
         }
 
         respuestas = []
+        intenciones_procesadas = set()
         esperando_datos = False
         for intencion, _ in intenciones:
             manejador = gestor_respuesta.get(intencion)
@@ -494,6 +495,7 @@ class Chatbot:
                     if texto.endswith(oferta):
                         texto = texto[:-len(oferta)]
                     respuestas.append(texto)
+                    intenciones_procesadas.add(intencion)
                 except Exception as e:
                     logger.exception("Error en multi-intent '%s': %s", intencion, e)
                     respuestas.append(f"Lo siento, tuve un problema al procesar la información sobre {intencion}.")
@@ -504,28 +506,23 @@ class Chatbot:
 
         if intencion_original == "cita_agendar":
             fecha_detectada = entidades.get("fecha", "")
+            msg_agendar = (
+                "Claro, con gusto te ayudo a agendar una cita. Por favor, proporciona los siguientes datos:\n\n"
+                "1. 📝 *Nombre completo*\n"
+                "2. 📱 *Teléfono de contacto*\n"
+                "3. 🏥 *Especialidad deseada*\n"
+            )
             if fecha_detectada:
-                horarios = self._formatear_horarios_disponibles(fecha_detectada)
-                msg_agendar = (
-                    "Claro, con gusto te ayudo a agendar una cita. Por favor, proporciona los siguientes datos:\n\n"
-                    "1. 📝 *Nombre completo*\n"
-                    "2. 📱 *Teléfono de contacto*\n"
-                    "3. 🏥 *Especialidad deseada*\n"
-                    f"4. 📅 *Fecha preferida:* {fecha_detectada}\n"
-                    "5. 🕐 *Horario preferido*\n\n"
-                    f"*Horarios disponibles para el {fecha_detectada}:*\n{horarios}"
-                )
+                msg_agendar += f"4. 📅 *Fecha preferida:* {fecha_detectada}\n"
             else:
-                horarios = self._formatear_horarios_disponibles()
-                msg_agendar = (
-                    "Claro, con gusto te ayudo a agendar una cita. Por favor, proporciona los siguientes datos:\n\n"
-                    "1. 📝 *Nombre completo*\n"
-                    "2. 📱 *Teléfono de contacto*\n"
-                    "3. 🏥 *Especialidad deseada*\n"
-                    "4. 📅 *Fecha preferida (dd/mm/aaaa)*\n"
-                    "5. 🕐 *Horario preferido*\n\n"
-                    f"*Horarios disponibles:*\n{horarios}"
-                )
+                msg_agendar += "4. 📅 *Fecha preferida (dd/mm/aaaa)*\n"
+            msg_agendar += "5. 🕐 *Horario preferido*"
+            if "horarios" not in intenciones_procesadas:
+                horarios = self._formatear_horarios_disponibles(fecha_detectada or None)
+                if fecha_detectada:
+                    msg_agendar += f"\n\n*Horarios disponibles para el {fecha_detectada}:*\n{horarios}"
+                else:
+                    msg_agendar += f"\n\n*Horarios disponibles:*\n{horarios}"
             respuestas.append(msg_agendar)
             esperando_datos = True
             combined = "\n\n".join(respuestas)

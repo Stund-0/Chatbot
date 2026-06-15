@@ -1,3 +1,5 @@
+import os
+
 from flask import request
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -18,8 +20,10 @@ def _key_func_usuario():
     return get_remote_address()
 
 
+_storage_uri = os.getenv("REDIS_URL") or "memory://"
+
 limiter = Limiter(
     key_func=_key_func_usuario,
     default_limits=["200 per day", "50 per hour"],
-    storage_uri="memory://",
+    storage_uri=_storage_uri,
 )

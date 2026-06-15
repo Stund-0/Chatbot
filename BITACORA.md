@@ -77,7 +77,7 @@
 
 ### Prioridad media
 - [ ] **Personalizar datos del negocio** — revisar y completar `datos/*.txt`, `mensajes/*.txt`, `config/empresa.txt`
-- [ ] **`storage_uri="memory://"` en rate limiter** — con 2+ workers gunicorn, cada worker tiene estado independiente; migrar a Redis
+- [x] **`storage_uri="memory://"` en rate limiter** — migrado a Redis vía `REDIS_URL`; si no está configurada, fallback a `memory://`
 
 ### Prioridad baja
 - [ ] **Pool size hardcodeado** (`minconn=2, maxconn=10`) — podría ser configurable via env vars
