@@ -63,6 +63,9 @@
 - [x] Horario laboral configurable via `HORARIO_WEEKDAY`/`HORARIO_SATURDAY` (antes hardcodeado 8-18/9-14)
 - [x] Gunicorn workers/timeout configurables via `GUNICORN_WORKERS`/`GUNICORN_TIMEOUT`
 - [x] `node_modules/` eliminado del repo (493 archivos, ~93k líneas) + `.gitignore` actualizado
+- [x] Deduplicación webhook por `msg_id` — evita doble mensaje al cliente cuando WhatsApp reenvía el mismo evento
+- [x] `confirmar_cita`/`rechazar_cita` ya no hacen `raise` — evita HTTP 500 → reintento → duplicados
+- [x] try/except en `_manejar_comando_admin` y webhook — errores se loggean sin propagarse
 
 ## Commits recientes
 
@@ -79,6 +82,8 @@
 | 15 Jun | `f73e972` | fix: inicializar DB al importar módulo, no solo en `__main__` |
 | 15 Jun | `af3f1e0` | fix: try/except en chat endpoint para capturar error exacto |
 | 15 Jun | `9cd9340` | fix: `cursor_factory=RealDictCursor` en pool PostgreSQL |
+| 15 Jun | `2803291` | feat: env vars para pool, TZ, horario, gunicorn + limpieza node_modules |
+| 15 Jun | `6c5a675` | fix: dedup webhook por msg_id + evitar HTTP 500 en admin/DB |
 
 ## Pendientes
 
@@ -95,9 +100,9 @@
 - [ ] **Agregar Redis a Railway (Upstash)** — para rate limiter compartido entre workers de gunicorn
 
 ### Prioridad baja
-- [ ] **Pool size hardcodeado** (`minconn=2, maxconn=10`) — podría ser configurable via env vars
-- [ ] **Zona horaria hardcodeada** `America/Mexico_City` en `chatbot.py:11`
-- [ ] **Horario laboral hardcodeado** 8-18 weekdays, 9-14 Sat en `chatbot.py:260-264`
-- [ ] **Gunicorn workers/timeout hardcodeados** en `run.py:12-13`
+- [x] **Pool size hardcodeado** — ahora configurable via `PG_POOL_MIN`/`PG_POOL_MAX`
+- [x] **Zona horaria hardcodeada** — ahora configurable via `TZ`
+- [x] **Horario laboral hardcodeado** — ahora configurable via `HORARIO_WEEKDAY`/`HORARIO_SATURDAY`
+- [x] **Gunicorn workers/timeout hardcodeados** — ahora configurables via `GUNICORN_WORKERS`/`GUNICORN_TIMEOUT`
 - [x] **`node_modules/` y `venv/` commiteados** — limpiado (`node_modules/` eliminado, 93k líneas menos en repo)
 - [ ] **Notificaciones por email** — no existe sistema de reporte por email
