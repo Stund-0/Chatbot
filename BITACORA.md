@@ -1,6 +1,6 @@
 # Chatbot WhatsApp — Bitácora
 
-**Última actualización:** 14 Junio 2026  
+**Última actualización:** 15 Junio 2026  
 **URL:** https://web-production-96a9a.up.railway.app  
 **Repo:** https://github.com/Stund-0/Chatbot
 
@@ -52,6 +52,12 @@
 - [x] ~~MODO_SIMULACION default "true"~~ cambiado a "false"
 - [x] ~~WhatsAppSender creado por comando admin~~ corregido con inyección via `Chatbot.__init__(sender=...)`
 - [x] ~~Multi-intent interceptaba cita_agendar con datos completos~~ corregido
+- [x] Rate limiter migrado a Redis (`REDIS_URL`) — fallback a `memory://` si no está configurado
+- [x] Fix horarios duplicados en multi-intent — si ya se mostraron, no se repiten en prompt de agendar
+- [x] `inicializar_db()` movido fuera de `if __name__` — la tabla se crea al importar con gunicorn
+- [x] `cursor_factory=RealDictCursor` en pool PostgreSQL — corrige 500 al agendar citas en Railway
+- [x] try/except en `/chat` — errores se loggean sin devolver 500 al cliente
+- [x] Redis instalado y probado localmente (58 tests + rate limiting funcional)
 
 ## Commits recientes
 
@@ -64,20 +70,24 @@
 | 14 Jun | `73fdf32` | fix: NameError en webhook.py — duplicación de mensajes |
 | 14 Jun | `0983e06` | feat: detección multi-intent + respuestas múltiples |
 | 14 Jun | `3920a62` | docs: actualizar bitacora con resumen de sesión, fixes y pendientes |
+| 15 Jun | `edb6471` | fix: evitar duplicar horarios en multi-intent + rate limiter con Redis |
+| 15 Jun | `f73e972` | fix: inicializar DB al importar módulo, no solo en `__main__` |
+| 15 Jun | `af3f1e0` | fix: try/except en chat endpoint para capturar error exacto |
+| 15 Jun | `9cd9340` | fix: `cursor_factory=RealDictCursor` en pool PostgreSQL |
 
 ## Pendientes
 
 ### Prioridad alta
+- [x] **Probar flujo completo en Railway** — webhook, agendar→confirmar→usuario, handoff con admin ✅
 - [ ] **Configurar Railway para producción:**
-  - Agregar `DATABASE_URL` (PostgreSQL plugin)
   - Configurar `ADMIN_TELEFONO` para notificaciones al admin
   - Configurar `REPORTES_API_KEY`
-  - Verificar que `MODO_SIMULACION=false` funcione correctamente
-- [ ] **Probar flujo completo en Railway** — webhook, agendar→confirmar→usuario, handoff con admin
+  - Personalizar datos del negocio (`datos/*.txt`, `mensajes/*.txt`, `config/empresa.txt`)
+  - Agregar Redis (Upstash gratis) y configurar `REDIS_URL` para rate limiter compartido entre workers
 
 ### Prioridad media
-- [ ] **Personalizar datos del negocio** — revisar y completar `datos/*.txt`, `mensajes/*.txt`, `config/empresa.txt`
 - [x] **`storage_uri="memory://"` en rate limiter** — migrado a Redis vía `REDIS_URL`; si no está configurada, fallback a `memory://`
+- [ ] **Agregar Redis a Railway (Upstash)** — para rate limiter compartido entre workers de gunicorn
 
 ### Prioridad baja
 - [ ] **Pool size hardcodeado** (`minconn=2, maxconn=10`) — podría ser configurable via env vars
