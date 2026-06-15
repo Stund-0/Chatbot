@@ -1,9 +1,11 @@
 import os
 import logging
+import threading
 from datetime import datetime
 
 DATABASE_URL = os.getenv("CUSTOM_DB_URL") or os.getenv("DATABASE_URL", "")
 _pg_pool = None
+_pg_pool_lock = threading.Lock()
 
 logger = logging.getLogger(__name__)
 
@@ -39,26 +41,28 @@ def _conectar_pg():
     global _pg_pool
     pg_dsn = _build_pg_dsn(DATABASE_URL) if DATABASE_URL else DATABASE_URL
     if _pg_pool is None:
-        import psycopg2
-        from psycopg2 import pool
-        try:
-            _pg_pool = pool.ThreadedConnectionPool(
-                minconn=2,
-                maxconn=10,
-                dsn=pg_dsn,
-                sslmode="require",
-            )
-            logger.info("PostgreSQL connection pool created (min=2, max=10)")
-        except Exception:
-            logger.warning("Falling back to single connection for PostgreSQL")
-            import psycopg2.extras
-            conn = psycopg2.connect(
-                pg_dsn,
-                sslmode="require",
-                cursor_factory=psycopg2.extras.RealDictCursor,
-            )
-            conn.autocommit = False
-            return conn
+        with _pg_pool_lock:
+            if _pg_pool is None:
+                try:
+                    import psycopg2
+                    from psycopg2 import pool
+                    _pg_pool = pool.ThreadedConnectionPool(
+                        minconn=2,
+                        maxconn=10,
+                        dsn=pg_dsn,
+                        sslmode="require",
+                    )
+                    logger.info("PostgreSQL connection pool created (min=2, max=10)")
+                except Exception:
+                    logger.warning("Falling back to single connection for PostgreSQL")
+                    import psycopg2.extras
+                    conn = psycopg2.connect(
+                        pg_dsn,
+                        sslmode="require",
+                        cursor_factory=psycopg2.extras.RealDictCursor,
+                    )
+                    conn.autocommit = False
+                    return conn
 
     conn = _pg_pool.getconn()
     conn.autocommit = False

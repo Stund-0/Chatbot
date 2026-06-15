@@ -1,6 +1,17 @@
-import json
 import os
 import re
+
+ESPECIALIDADES = [
+    "medicina general", "pediatría", "pediatria", "ginecología", "ginecologia",
+    "cardiología", "cardiologia", "dermatología", "dermatologia", "psicología", "psicologia",
+    "medicina interna", "medicina familiar",
+]
+
+PALABRAS_ESPECIALIDAD = [
+    "medicina", "pediatria", "pediatría", "ginecologia", "ginecología",
+    "cardiologia", "cardiología", "dermatologia", "dermatología",
+    "psicologia", "psicología", "especialidad", "especialidades",
+]
 
 INTENCIONES = {
     "saludo": ["hola", "buenos días", "buenas tardes", "buenas noches", "qué tal", "hey", "saludos", "buen día", "buenas", "qué hay", "cómo estás", "como estas", "que tal", "que hay", "como estas", "buen dia", "buenos dias"],
@@ -14,7 +25,7 @@ INTENCIONES = {
     "reserva_crear": ["reservar", "apartar", "quiero comprar", "ordenar", "pedido", "comprar", "producto", "hacer una reserva"],
     "reserva_consultar": ["mi reserva", "mi pedido", "consultar reserva", "estado de mi pedido", "ver reserva", "consultar mi pedido", "ver mi reserva"],
     "contacto": ["teléfono", "telefono", "correo", "contacto", "comunicarme", "llamar", "email", "whatsapp", "cuál es su número", "cual es su numero", "dónde llamo", "donde llamo"],
-    "servicio_especifico": ["medicina general", "pediatría", "pediatria", "ginecología", "ginecologia", "cardiología", "cardiologia", "dermatología", "dermatologia", "psicología", "psicologia", "especialidad", "especialidades"],
+    "servicio_especifico": ESPECIALIDADES + ["especialidad", "especialidades"],
     "pago": ["pagar", "pago", "métodos de pago", "formas de pago", "transferencia", "tarjeta", "métodos de pago", "formas de pago"],
     "emergencia": ["emergencia", "urgencia", "grave", "accidente", "duele", "ayuda urgente", "necesito ayuda"],
     "transferir": ["persona", "humano", "asesor", "operador", "hablar con alguien", "transferir", "agente", "atención personal", "atencion personal"],
@@ -88,13 +99,8 @@ def detectar_intencion(mensaje):
         if palabra_clave in palabras_msg and intencion_asignada in puntajes:
             puntajes[intencion_asignada] += 5
 
-    ESPECIALIDADES = [
-        "medicina", "pediatria", "pediatría", "ginecologia", "ginecología",
-        "cardiologia", "cardiología", "dermatologia", "dermatología",
-        "psicologia", "psicología", "especialidad", "especialidades",
-    ]
     if "servicio_especifico" in puntajes:
-        for esp in ESPECIALIDADES:
+        for esp in PALABRAS_ESPECIALIDAD:
             if esp in palabras_msg:
                 puntajes["servicio_especifico"] += 3
                 break
@@ -150,13 +156,8 @@ def detectar_intenciones_multiples(mensaje):
         if palabra_clave in palabras_msg and intencion_asignada in puntajes:
             puntajes[intencion_asignada] += 5
 
-    ESPECIALIDADES = [
-        "medicina", "pediatria", "pediatría", "ginecologia", "ginecología",
-        "cardiologia", "cardiología", "dermatologia", "dermatología",
-        "psicologia", "psicología", "especialidad", "especialidades",
-    ]
     if "servicio_especifico" in puntajes:
-        for esp in ESPECIALIDADES:
+        for esp in PALABRAS_ESPECIALIDAD:
             if esp in palabras_msg:
                 puntajes["servicio_especifico"] += 3
                 break
@@ -247,12 +248,7 @@ def extraer_entidades(mensaje):
                 entidades["nombre"] = nombre
                 break
 
-    especialidades = [
-        "medicina general", "pediatría", "pediatria", "ginecología", "ginecologia",
-        "cardiología", "cardiologia", "dermatología", "dermatologia", "psicología", "psicologia",
-        "medicina interna", "medicina familiar",
-    ]
-    for esp in especialidades:
+    for esp in ESPECIALIDADES:
         if esp in mensaje_lower:
             entidades["especialidad"] = esp.title()
             break
@@ -265,13 +261,4 @@ def extraer_entidades(mensaje):
     return entidades
 
 
-def interpretar_mensaje(mensaje, modo_simulacion=True):
-    intencion = detectar_intencion(mensaje)
-    entidades = extraer_entidades(mensaje)
 
-    return {
-        "intencion": intencion,
-        "entidades": entidades,
-        "mensaje_original": mensaje,
-        "modo_simulacion": modo_simulacion,
-    }

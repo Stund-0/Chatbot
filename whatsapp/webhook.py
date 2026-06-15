@@ -1,9 +1,9 @@
-import json
 import os
 import logging
 
 from flask import Blueprint, request, jsonify, current_app
 
+from config.limiter import limiter
 from .notificaciones import notificar_nueva_cita, notificar_admin
 
 webhook_bp = Blueprint("webhook", __name__)
@@ -24,6 +24,7 @@ def verificar_webhook():
 
 
 @webhook_bp.route("/webhook", methods=["POST"])
+@limiter.limit("30 per minute")
 def recibir_mensaje():
     data = request.get_json()
     if not data:
@@ -32,7 +33,7 @@ def recibir_mensaje():
     try:
         chatbot = current_app.config.get("chatbot")
         sender = current_app.config.get("sender")
-        modo_simulacion = os.getenv("MODO_SIMULACION", "true").lower() == "true"
+        modo_simulacion = chatbot.modo_simulacion if chatbot else False
 
         entries = data.get("entry", [])
         mensajes_procesados = []

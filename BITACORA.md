@@ -12,17 +12,16 @@
 - [x] Flujo de agendamiento: captura → pendiente_confirmacion → admin confirma/rechaza
 - [x] Notificaciones al admin por nueva cita y transferencia
 - [x] Log de mensajes no entendidos (`datos/no_entendidos.jsonl`)
-- [x] Rate limiting (50/hora global, 30/min /chat, 10/min /reportes)
+- [x] Rate limiting por número de usuario (200/día, 50/hora global; 30/min /chat, 30/min webhook, 10/min /reportes)
 - [x] Autenticación Bearer token en `/reportes/*`
-- [x] Conexión PostgreSQL con pool (min=2, max=10) + SQLite como fallback
+- [x] Conexión PostgreSQL con pool thread-safe (min=2, max=10) + SQLite como fallback
 - [x] Captura multi-turno con contexto por número
 - [x] Fechas relativas (mañana, pasado mañana, días de la semana)
-- [x] Filtrado de horarios disponibles contra BD
-- [x] Comandos admin vía WhatsApp (CONFIRMAR/RECHAZAR + folio)
-- [x] Modo simulación para desarrollo sin WhatsApp real
-- [x] 22 tests pytest (API + intérprete) — todos pasan
-- [x] 184 tests exhaustivos de intenciones — todas pasan
-- [x] Logging estructurado JSON (configurable)
+- [x] Filtrado de horarios disponibles contra BD + lectura de `horarios_disponibles.txt`
+- [x] Comandos admin vía WhatsApp (CONFIRMAR/RECHAZAR + folio) con sender inyectado
+- [x] Modo simulación para desarrollo (default `false` en producción)
+- [x] 58 tests pytest (API + intérprete + agendamiento) — todos pasan
+- [x] Logging estructurado JSON (configurable) con logging en operaciones DB
 - [x] docker-compose.yml (PostgreSQL + app)
 - [x] CI/CD (GitHub Actions: lint → test → docker build)
 - [x] Dockerfile con usuario no-root + healthcheck
@@ -32,21 +31,33 @@
 - [x] Validación de formato en datos de cita (teléfono, fecha no pasada, hora)
 - [x] Pregunta "¿Te gustaría agendar?" después de dar info (precios, horarios, servicios)
 - [x] Lista de especialidades disponibles cuando se pregunta "especialidad"
-- [x] Cancelación redirige a contacto directo con admin
-- [x] Recordatorio automático de citas (endpoint POST /recordatorios)
 - [x] Transferencia notifica al admin, quien contacta al cliente directamente
-- [x] Limpieza de archivos muertos (interprete_avanzado, prompts, wrappers no usados)
-- [x] **Detección multi-intent** — cuando el usuario pide 2+ datos (precios+horarios, especialidades+horarios, etc.), el bot responde con mensajes separados para cada uno
-- [x] **Cita_agendar + info combinado** — si el usuario pide info y agendar en el mismo mensaje, recibe respuestas de info + prompt de agendamiento
-- [x] **Fix: NameError en webhook.py** — variable `texto_respuesta` no definida causaba HTTP 500 y WhatsApp retry generaba 9 mensajes duplicados
-- [x] **Fix: puntuación rompía keywords** — comas impedían detectar "especialidades," como "especialidades"; se limpia puntuación antes de matchear
-- [x] **Fix: "lugar/lugares" no detectaban ubicación** — faltaban keywords en `INTENCIONES` de `interprete.py`
-- [x] **Fix: contexto secuestraba preguntas info** — si había `esperando_datos=True` y el usuario preguntaba "que precios y horarios tiene", el bot lo trataba como datos de agendamiento; ahora las intenciones informativas resetean el contexto
+- [x] Detección multi-intent — cuando el usuario pide 2+ datos, el bot responde con mensajes separados
+- [x] Endpoint `/health` con estado de DB + WhatsApp config
+- [x] Config compartida `config/limiter.py` con key function por usuario
+- [x] Error handling + logging en multi-intent
+- [x] Thread-safe pool init con `threading.Lock` (double-checked locking)
+- [x] Endpoint `/health` con estado de DB + WhatsApp config
+- [x] Config compartida `config/limiter.py` con key function por usuario
+- [x] 36 tests de agendamiento (DB, validación, handlers, multi-turno, admin) + 22 previos = 58
+- [x] Documentación técnica actualizada (`docs/api.md`, `docs/arquitectura.md`, etc.)
+- [x] ~~Recordatorio automático de citas~~ eliminado
+- [x] ~~Limpieza archivos muertos~~ (interprete_avanzado, prompts, wrappers no usados)
+- [x] ~~Código muerto~~ imports/funciones eliminados (consultas.py, interprete.py, api.py)
+- [x] ~~`__import__("datetime")~~ corregido a import directo
+- [x] ~~Connection leaks~~ corregidos: `confirmar_cita`, `rechazar_cita`, `buscar_cita_por_folio`
+- [x] ~~Especialidades triplicadas~~ consolidado en constantes modulares `ESPECIALIDADES`/`PALABRAS_ESPECIALIDAD`
+- [x] ~~Config muerta en settings.json~~ limpiado (11 keys eliminadas)
+- [x] ~~Broad except sin logging~~ corregido con `logger.exception` en consultas.py
+- [x] ~~MODO_SIMULACION default "true"~~ cambiado a "false"
+- [x] ~~WhatsAppSender creado por comando admin~~ corregido con inyección via `Chatbot.__init__(sender=...)`
+- [x] ~~Multi-intent interceptaba cita_agendar con datos completos~~ corregido
 
 ## Commits recientes
 
 | Fecha | Hash | Descripción |
 |-------|------|-------------|
+| 14 Jun | `2a180fb` | fix: pool thread-safe, sender inyectado, especialidades consolidadas, modo_simulacion default false, logging DB, config limpiado, docs actualizados |
 | 14 Jun | `6ed9a19` | docs: actualizar bitacora con multi-intent, fix contexto, y commits recientes |
 | 14 Jun | `4ac4304` | fix: contexto de agendamiento se resetea al preguntar info |
 | 14 Jun | `f80c0aa` | fix: puntuación, lugar/lugares, cita_agendar junto a info |
@@ -57,21 +68,21 @@
 ## Pendientes
 
 ### Prioridad alta
-- [ ] **Probar flujo completo en Railway** — webhook, agendar→confirmar→usuario, handoff con admin
 - [ ] **Configurar Railway para producción:**
   - Agregar `DATABASE_URL` (PostgreSQL plugin)
   - Configurar `ADMIN_TELEFONO` para notificaciones al admin
   - Configurar `REPORTES_API_KEY`
   - Verificar que `MODO_SIMULACION=false` funcione correctamente
+- [ ] **Probar flujo completo en Railway** — webhook, agendar→confirmar→usuario, handoff con admin
 
 ### Prioridad media
 - [ ] **Personalizar datos del negocio** — revisar y completar `datos/*.txt`, `mensajes/*.txt`, `config/empresa.txt`
-- [ ] **Pruebas automatizadas del flujo de agendamiento** — no hay tests que cubran multi-turno, `registrar_cita`, confirmación admin
-- [ ] **Manejo de errores en multi-intent** — qué pasa si una de las intenciones múltiples falla (ej: servicio_especifico no encuentra datos)
-- [ ] **Logging de multi-intent** — registrar en `no_entendidos.jsonl` cuando el usuario hace multi-intent pero ninguna intención es reconocida
-- [ ] **Recordatorios usan estado `pendiente` en vez de `confirmada`** — `_enviar_recordatorios` filtra por `pendiente` en lugar de `confirmada`, podría enviar recordatorios de citas no confirmadas
-- [ ] **Fechas disponibles con horarios hardcodeados** — `_manejar_fechas_disponibles` usa slots fijos en el código, ignora el archivo `horarios_disponibles.txt`
+- [ ] **`storage_uri="memory://"` en rate limiter** — con 2+ workers gunicorn, cada worker tiene estado independiente; migrar a Redis
 
 ### Prioridad baja
-- [ ] **Rate limiting más granular** — diferenciar límites por número de usuario
-- [ ] **Métricas monitoreables** — endpoint `/health` con estado de BD, WhatsApp API, cola de mensajes
+- [ ] **Pool size hardcodeado** (`minconn=2, maxconn=10`) — podría ser configurable via env vars
+- [ ] **Zona horaria hardcodeada** `America/Mexico_City` en `chatbot.py:11`
+- [ ] **Horario laboral hardcodeado** 8-18 weekdays, 9-14 Sat en `chatbot.py:260-264`
+- [ ] **Gunicorn workers/timeout hardcodeados** en `run.py:12-13`
+- [ ] **`node_modules/` y `venv/` commiteados** — limpiar con `.gitignore` + `git rm -r --cached`
+- [ ] **Notificaciones por email** — no existe sistema de reporte por email

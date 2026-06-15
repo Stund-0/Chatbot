@@ -1,9 +1,12 @@
 import json
+import logging
 import os
 import re
 from datetime import datetime, timedelta
 
 import pytz
+
+logger = logging.getLogger(__name__)
 
 ZONA_HORARIA = pytz.timezone("America/Mexico_City")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -20,8 +23,9 @@ def _normalizar(texto):
 
 
 class Chatbot:
-    def __init__(self, modo_simulacion=True):
+    def __init__(self, modo_simulacion=True, sender=None):
         self.modo_simulacion = modo_simulacion
+        self.sender = sender
         self.config = self._cargar_config()
         self.datos = {}
         self.mensajes = {}
@@ -260,6 +264,32 @@ class Chatbot:
         else:
             return False
 
+    def _cargar_slots_horarios(self):
+        slots_semana = {"0": [], "1": [], "2": [], "3": [], "4": [], "5": [], "6": []}
+        horarios_raw = self.datos.get("horarios_disponibles", "")
+        if not horarios_raw:
+            return slots_semana
+
+        secciones = horarios_raw.split("\n\n")
+        for seccion in secciones:
+            if "Lunes a Viernes" in seccion or "lunes a viernes" in seccion.lower():
+                slots = []
+                for linea in seccion.split("\n"):
+                    l = linea.strip()
+                    if l and not l.startswith("Lunes") and not l.startswith("lunes") and not l.startswith("Sáb") and not l.startswith("sáb") and not l.startswith("==="):
+                        slots.append(l)
+                for k in ["0", "1", "2", "3", "4"]:
+                    slots_semana[k] = list(slots)
+            elif "Sáb" in seccion or "sáb" in seccion.lower():
+                slots = []
+                for linea in seccion.split("\n"):
+                    l = linea.strip()
+                    if l and not l.startswith("Sáb") and not l.startswith("sáb") and not l.startswith("==="):
+                        slots.append(l)
+                slots_semana["5"] = slots
+
+        return slots_semana
+
     def _formatear_horarios_disponibles(self, fecha=None):
         horarios_raw = self.datos.get("horarios_disponibles", "")
         if not horarios_raw:
@@ -350,15 +380,10 @@ class Chatbot:
                         f"▪️ *Hora:* {cita['hora']}\n\n"
                         f"Te esperamos! 🏥"
                     )
-                    from whatsapp.sender import WhatsAppSender
-                    sender = WhatsAppSender(
-                        token=self.config.get("whatsapp_token", os.getenv("WHATSAPP_TOKEN", "")),
-                        phone_id=self.config.get("whatsapp_phone_id", os.getenv("WHATSAPP_PHONE_ID", "")),
-                    )
                     if self.modo_simulacion:
                         print(f"\n[ENVIANDO CONFIRMACION A USUARIO {cita['telefono']}]: {msg_usuario}\n")
-                    else:
-                        sender.enviar_texto(cita["telefono"], msg_usuario)
+                    elif self.sender:
+                        self.sender.enviar_texto(cita["telefono"], msg_usuario)
                     return {
                         "respuesta": f"✅ Cita {argumento} confirmada. El usuario ha sido notificado.",
                         "intencion": "admin_comando",
@@ -381,15 +406,10 @@ class Chatbot:
                         f"*Horarios disponibles para esa fecha:*\n{horarios}\n\n"
                         f"Por favor, elige un nuevo horario y vuelve a solicitarlo. 🙏"
                     )
-                    from whatsapp.sender import WhatsAppSender
-                    sender = WhatsAppSender(
-                        token=self.config.get("whatsapp_token", os.getenv("WHATSAPP_TOKEN", "")),
-                        phone_id=self.config.get("whatsapp_phone_id", os.getenv("WHATSAPP_PHONE_ID", "")),
-                    )
                     if self.modo_simulacion:
                         print(f"\n[ENVIANDO RECHAZO A USUARIO {cita['telefono']}]: {msg_usuario}\n")
-                    else:
-                        sender.enviar_texto(cita["telefono"], msg_usuario)
+                    elif self.sender:
+                        self.sender.enviar_texto(cita["telefono"], msg_usuario)
                     return {
                         "respuesta": f"❌ Cita {argumento} rechazada. El usuario ha sido notificado con horarios disponibles.",
                         "intencion": "admin_comando",
@@ -467,14 +487,19 @@ class Chatbot:
         for intencion, _ in intenciones:
             manejador = gestor_respuesta.get(intencion)
             if manejador:
-                resultado = manejador(mensaje, entidades, numero)
-                texto = resultado["respuesta"]
-                oferta = self.OFERTA_AGENDAR
-                if texto.endswith(oferta):
-                    texto = texto[:-len(oferta)]
-                respuestas.append(texto)
+                try:
+                    resultado = manejador(mensaje, entidades, numero)
+                    texto = resultado["respuesta"]
+                    oferta = self.OFERTA_AGENDAR
+                    if texto.endswith(oferta):
+                        texto = texto[:-len(oferta)]
+                    respuestas.append(texto)
+                except Exception as e:
+                    logger.exception("Error en multi-intent '%s': %s", intencion, e)
+                    respuestas.append(f"Lo siento, tuve un problema al procesar la información sobre {intencion}.")
 
         if not respuestas:
+            self._registrar_no_entendido(mensaje, numero, "multi_intent_fallido")
             return self._manejar_consulta_general(mensaje, entidades, numero)
 
         if intencion_original == "cita_agendar":
@@ -542,7 +567,8 @@ class Chatbot:
         intencion = detectar_intencion(mensaje_usuario)
         entidades = extraer_entidades(mensaje_usuario)
 
-        if self._datos_completos_para_cita(entidades) and intencion not in self.INTENCIONES_RESET:
+        datos_cita_completos = self._datos_completos_para_cita(entidades)
+        if datos_cita_completos and intencion not in self.INTENCIONES_RESET:
             intencion = "cita_agendar"
         elif self._datos_completos_para_reserva(entidades) and intencion not in self.INTENCIONES_RESET:
             intencion = "reserva_crear"
@@ -569,7 +595,7 @@ class Chatbot:
             respuesta = self._reemplazar_variables(template)
             return {"respuesta": respuesta, "intencion": "error_formato", "transferir": False}
 
-        if not ctx_previo:
+        if not ctx_previo and not datos_cita_completos:
             intenciones_multi = detectar_intenciones_multiples(mensaje_usuario)
             if len(intenciones_multi) >= 2:
                 msg_lower = mensaje_usuario.lower()
@@ -656,13 +682,7 @@ class Chatbot:
         hoy = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         nombres_dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
         meses_es = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
-        slots_semana = {"0": ["9:00 AM","10:00 AM","11:00 AM","12:00 PM","2:00 PM","3:00 PM","4:00 PM","5:00 PM"],
-                        "1": ["9:00 AM","10:00 AM","11:00 AM","12:00 PM","2:00 PM","3:00 PM","4:00 PM","5:00 PM"],
-                        "2": ["9:00 AM","10:00 AM","11:00 AM","12:00 PM","2:00 PM","3:00 PM","4:00 PM","5:00 PM"],
-                        "3": ["9:00 AM","10:00 AM","11:00 AM","12:00 PM","2:00 PM","3:00 PM","4:00 PM","5:00 PM"],
-                        "4": ["9:00 AM","10:00 AM","11:00 AM","12:00 PM","2:00 PM","3:00 PM","4:00 PM","5:00 PM"],
-                        "5": ["9:00 AM","10:00 AM","11:00 AM","12:00 PM","1:00 PM"],
-                        "6": []}
+        slots_semana = self._cargar_slots_horarios()
 
         if "mes" in mensaje.lower():
             fecha_inicio = max(hoy.replace(day=1), hoy)
@@ -1037,44 +1057,7 @@ class Chatbot:
 
         return {"respuesta": respuesta, "intencion": "reportes", "transferir": False}
 
-    def obtener_citas_confirmadas_manana(self):
-        from database.consultas import listar_citas
-        manana = (datetime.now() + timedelta(days=1)).strftime("%d/%m/%Y")
-        citas = listar_citas(estado="pendiente")
-        return [c for c in citas if c.get("fecha") == manana]
-
-    def _enviar_recordatorios(self):
-        from whatsapp.sender import WhatsAppSender
-        citas_manana = self.obtener_citas_confirmadas_manana()
-        if not citas_manana:
-            return {"enviados": 0, "mensaje": "No hay citas para mañana"}
-        sender = WhatsAppSender(
-            token=self.config.get("whatsapp_token", os.getenv("WHATSAPP_TOKEN", "")),
-            phone_id=self.config.get("whatsapp_phone_id", os.getenv("WHATSAPP_PHONE_ID", "")),
-        )
-        enviados = 0
-        for cita in citas_manana:
-            msg = (
-                f"🔔 *Recordatorio de cita médica*\n\n"
-                f"Estimado/a {cita['nombre']}, te recordamos que tienes una cita mañana:\n\n"
-                f"▪️ *Especialidad:* {cita.get('especialidad', 'N/A')}\n"
-                f"▪️ *Fecha:* {cita['fecha']}\n"
-                f"▪️ *Hora:* {cita['hora']}\n"
-                f"▪️ *Folio:* {cita['folio']}\n\n"
-                "Te esperamos. Si no puedes asistir, contacta a nuestro equipo para reagendar."
-            )
-            if self.modo_simulacion:
-                print(f"\n[RECORDATORIO] Para: {cita['telefono']}")
-                print(f"[MENSAJE]: {msg}\n")
-                enviados += 1
-            else:
-                resultado = sender.enviar_texto(cita["telefono"], msg)
-                if resultado.get("exito"):
-                    enviados += 1
-        return {"enviados": enviados, "total": len(citas_manana)}
-
     def _registrar_no_entendido(self, mensaje, numero=None, intencion=None):
-        import json
         from datetime import datetime
 
         ruta = self._ruta("datos", "no_entendidos.jsonl")

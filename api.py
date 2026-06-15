@@ -1,6 +1,5 @@
-import json
 import os
-import logging
+from datetime import datetime
 
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
@@ -10,33 +9,27 @@ load_dotenv()
 from config.logging_config import setup_logging
 logger = setup_logging()
 
+from config.limiter import limiter
 from database.agenda_db import inicializar as inicializar_db
 from chatbot import Chatbot
 from whatsapp.webhook import webhook_bp
 from whatsapp.sender import WhatsAppSender
 from whatsapp.handlers import MessageHandler
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 
 app = Flask(__name__)
 
-MODO_SIMULACION = os.getenv("MODO_SIMULACION", "true").lower() == "true"
+MODO_SIMULACION = os.getenv("MODO_SIMULACION", "false").lower() == "true"
 DEBUG = os.getenv("DEBUG", "true").lower() == "true"
 PUERTO = int(os.getenv("PUERTO", "5000"))
 REPORTES_API_KEY = os.getenv("REPORTES_API_KEY", "")
 
-limiter = Limiter(
-    app=app,
-    key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"],
-    storage_uri="memory://",
-)
+limiter.init_app(app)
 
-chatbot = Chatbot(modo_simulacion=MODO_SIMULACION)
 sender = WhatsAppSender(
     token=os.getenv("WHATSAPP_TOKEN"),
     phone_id=os.getenv("WHATSAPP_PHONE_ID"),
 )
+chatbot = Chatbot(modo_simulacion=MODO_SIMULACION, sender=sender)
 msg_handler = MessageHandler(sender)
 
 app.config["chatbot"] = chatbot
@@ -58,7 +51,35 @@ def index():
 
 @app.route("/salud", methods=["GET"])
 def salud():
-    return jsonify({"status": "ok", "timestamp": __import__("datetime").datetime.now().isoformat()})
+    return jsonify({"status": "ok", "timestamp": datetime.now().isoformat()})
+
+
+@app.route("/health", methods=["GET"])
+def health():
+    from datetime import datetime
+    db_ok = False
+    db_error = ""
+    try:
+        from database.agenda_db import conectar, liberar_conexion
+        conn = conectar()
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1")
+        cursor.close()
+        liberar_conexion(conn)
+        db_ok = True
+    except Exception as e:
+        db_error = str(e)
+
+    sender = app.config.get("sender")
+    whatsapp_ok = bool(sender and sender.token and sender.phone_id)
+
+    return jsonify({
+        "status": "ok" if db_ok else "degradado",
+        "base_datos": "conectada" if db_ok else f"error: {db_error}",
+        "whatsapp_api": "configurado" if whatsapp_ok else "no configurado",
+        "modo": "simulación" if MODO_SIMULACION else "producción",
+        "timestamp": datetime.now().isoformat(),
+    })
 
 
 @app.route("/chat", methods=["POST"])
@@ -175,14 +196,6 @@ def reportes_reservas():
             for r in reservas
         ],
     })
-
-
-@app.route("/recordatorios", methods=["POST"])
-@requerir_api_key
-def recordatorios():
-    chatbot = app.config["chatbot"]
-    resultado = chatbot._enviar_recordatorios()
-    return jsonify(resultado)
 
 
 app.register_blueprint(webhook_bp)

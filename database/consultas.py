@@ -1,4 +1,8 @@
+import logging
+
 from .agenda_db import conectar, liberar_conexion, generar_folio, es_postgresql, _fetchall, _last_id
+
+logger = logging.getLogger(__name__)
 
 
 def _adaptar_query(query):
@@ -20,24 +24,7 @@ def _registrar(conn, query, params):
         conn.commit()
         return row_id
     except Exception:
-        conn.rollback()
-        raise
-    finally:
-        liberar_conexion(conn)
-
-
-def _ejecutar(query, params=None):
-    conn = conectar()
-    try:
-        cursor = conn.cursor()
-        query = _adaptar_query(query)
-        if params:
-            cursor.execute(query, params)
-        else:
-            cursor.execute(query)
-        conn.commit()
-        return cursor
-    except Exception:
+        logger.exception("Error en _registrar")
         conn.rollback()
         raise
     finally:
@@ -55,6 +42,7 @@ def _consultar(query, params=None):
             cursor.execute(query)
         return _fetchall(conn, cursor)
     except Exception:
+        logger.exception("Error en _consultar")
         conn.rollback()
         raise
     finally:
@@ -107,69 +95,62 @@ def buscar_reserva_por_telefono(telefono):
     )
 
 
-def buscar_por_folio(folio):
-    conn = conectar()
-    cursor = conn.cursor()
-    query = _adaptar_query("SELECT * FROM agenda WHERE folio = %s")
-    cursor.execute(query, (folio,))
-    row = cursor.fetchone()
-    conn.close()
-    if row:
-        return dict(row)
-    return None
-
-
-def cancelar_cita(folio):
-    conn = conectar()
-    cursor = conn.cursor()
-    query = _adaptar_query(
-        "UPDATE agenda SET estado = 'cancelada' WHERE folio = %s AND tipo = 'cita'"
-    )
-    cursor.execute(query, (folio,))
-    conn.commit()
-    cambios = cursor.rowcount
-    conn.close()
-    return cambios > 0
-
-
 def confirmar_cita(folio):
     conn = conectar()
-    cursor = conn.cursor()
-    query = _adaptar_query(
-        "UPDATE agenda SET estado = 'pendiente' WHERE folio = %s AND tipo = 'cita' AND estado = 'pendiente_confirmacion'"
-    )
-    cursor.execute(query, (folio,))
-    conn.commit()
-    cambios = cursor.rowcount
-    conn.close()
-    return cambios > 0
+    try:
+        cursor = conn.cursor()
+        query = _adaptar_query(
+            "UPDATE agenda SET estado = 'pendiente' WHERE folio = %s AND tipo = 'cita' AND estado = 'pendiente_confirmacion'"
+        )
+        cursor.execute(query, (folio,))
+        conn.commit()
+        cambios = cursor.rowcount
+        return cambios > 0
+    except Exception:
+        logger.exception("Error en confirmar_cita")
+        conn.rollback()
+        raise
+    finally:
+        liberar_conexion(conn)
 
 
 def rechazar_cita(folio):
     conn = conectar()
-    cursor = conn.cursor()
-    query = _adaptar_query(
-        "UPDATE agenda SET estado = 'rechazada' WHERE folio = %s AND tipo = 'cita' AND estado = 'pendiente_confirmacion'"
-    )
-    cursor.execute(query, (folio,))
-    conn.commit()
-    cambios = cursor.rowcount
-    conn.close()
-    return cambios > 0
+    try:
+        cursor = conn.cursor()
+        query = _adaptar_query(
+            "UPDATE agenda SET estado = 'rechazada' WHERE folio = %s AND tipo = 'cita' AND estado = 'pendiente_confirmacion'"
+        )
+        cursor.execute(query, (folio,))
+        conn.commit()
+        cambios = cursor.rowcount
+        return cambios > 0
+    except Exception:
+        logger.exception("Error en rechazar_cita")
+        conn.rollback()
+        raise
+    finally:
+        liberar_conexion(conn)
 
 
 def buscar_cita_por_folio(folio):
     conn = conectar()
-    cursor = conn.cursor()
-    query = _adaptar_query(
-        "SELECT * FROM agenda WHERE folio = %s AND tipo = 'cita'"
-    )
-    cursor.execute(query, (folio,))
-    row = cursor.fetchone()
-    conn.close()
-    if row:
-        return dict(row)
-    return None
+    try:
+        cursor = conn.cursor()
+        query = _adaptar_query(
+            "SELECT * FROM agenda WHERE folio = %s AND tipo = 'cita'"
+        )
+        cursor.execute(query, (folio,))
+        row = cursor.fetchone()
+        if row:
+            return dict(row)
+        return None
+    except Exception:
+        logger.exception("Error en buscar_cita_por_folio")
+        conn.rollback()
+        raise
+    finally:
+        liberar_conexion(conn)
 
 
 def buscar_citas_por_fecha(fecha):
