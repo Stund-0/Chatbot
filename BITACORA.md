@@ -57,7 +57,7 @@
 
 | Fecha | Hash | Descripción |
 |-------|------|-------------|
-| 14 Jun | `2a180fb` | fix: pool thread-safe, sender inyectado, especialidades consolidadas, modo_simulacion default false, logging DB, config limpiado, docs actualizados |
+| 14 Jun | `da1d8c6` | fix: pool thread-safe, sender inyectado, especialidades consolidadas, modo_simulacion default false, logging DB, config limpiado, docs actualizados |
 | 14 Jun | `6ed9a19` | docs: actualizar bitacora con multi-intent, fix contexto, y commits recientes |
 | 14 Jun | `4ac4304` | fix: contexto de agendamiento se resetea al preguntar info |
 | 14 Jun | `f80c0aa` | fix: puntuación, lugar/lugares, cita_agendar junto a info |
