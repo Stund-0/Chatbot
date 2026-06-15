@@ -109,7 +109,7 @@ def confirmar_cita(folio):
     except Exception:
         logger.exception("Error en confirmar_cita")
         conn.rollback()
-        raise
+        return False
     finally:
         liberar_conexion(conn)
 
@@ -128,7 +128,7 @@ def rechazar_cita(folio):
     except Exception:
         logger.exception("Error en rechazar_cita")
         conn.rollback()
-        raise
+        return False
     finally:
         liberar_conexion(conn)
 

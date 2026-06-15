@@ -371,7 +371,15 @@ class Chatbot:
         argumento = argumento.strip()
 
         if comando in ("CONFIRMAR", "RECHAZAR"):
-            cita = buscar_cita_por_folio(argumento)
+            try:
+                cita = buscar_cita_por_folio(argumento)
+            except Exception:
+                logger.exception("Error buscando cita %s", argumento)
+                return {
+                    "respuesta": f"Error al buscar la cita {argumento}. Intenta de nuevo.",
+                    "intencion": "admin_comando",
+                    "transferir": False,
+                }
             if not cita:
                 return {
                     "respuesta": f"No encontré ninguna cita con folio {argumento}.",
@@ -392,7 +400,10 @@ class Chatbot:
                     if self.modo_simulacion:
                         print(f"\n[ENVIANDO CONFIRMACION A USUARIO {cita['telefono']}]: {msg_usuario}\n")
                     elif self.sender:
-                        self.sender.enviar_texto(cita["telefono"], msg_usuario)
+                        try:
+                            self.sender.enviar_texto(cita["telefono"], msg_usuario)
+                        except Exception:
+                            logger.exception("Error enviando confirmacion al cliente %s", cita["telefono"])
                     return {
                         "respuesta": f"✅ Cita {argumento} confirmada. El usuario ha sido notificado.",
                         "intencion": "admin_comando",
@@ -418,7 +429,10 @@ class Chatbot:
                     if self.modo_simulacion:
                         print(f"\n[ENVIANDO RECHAZO A USUARIO {cita['telefono']}]: {msg_usuario}\n")
                     elif self.sender:
-                        self.sender.enviar_texto(cita["telefono"], msg_usuario)
+                        try:
+                            self.sender.enviar_texto(cita["telefono"], msg_usuario)
+                        except Exception:
+                            logger.exception("Error enviando rechazo al cliente %s", cita["telefono"])
                     return {
                         "respuesta": f"❌ Cita {argumento} rechazada. El usuario ha sido notificado con horarios disponibles.",
                         "intencion": "admin_comando",

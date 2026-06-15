@@ -1,5 +1,6 @@
 import os
 import logging
+from collections import OrderedDict
 
 from flask import Blueprint, request, jsonify, current_app
 
@@ -10,6 +11,10 @@ webhook_bp = Blueprint("webhook", __name__)
 
 VERIFY_TOKEN = os.getenv("WHATSAPP_VERIFY_TOKEN", "chatbot123")
 logger = logging.getLogger(__name__)
+
+# Deduplicacion de mensajes webhook (WhatsApp puede reenviar el mismo evento)
+_processed_ids = OrderedDict()
+_MAX_PROCESSED_IDS = 500
 
 
 @webhook_bp.route("/webhook", methods=["GET"])
@@ -46,12 +51,25 @@ def recibir_mensaje():
                 metadata = value.get("metadata", {})
 
                 for msg in messages:
+                    msg_id = msg.get("id", "")
+                    if msg_id:
+                        if msg_id in _processed_ids:
+                            logger.debug("Mensaje %s ya procesado, saltando", msg_id)
+                            continue
+                        _processed_ids[msg_id] = True
+                        while len(_processed_ids) > _MAX_PROCESSED_IDS:
+                            _processed_ids.popitem(last=False)
+
                     if msg.get("type") == "text":
                         from_number = msg.get("from", "")
                         text_body = msg.get("text", {}).get("body", "")
 
                         if chatbot:
-                            respuesta = chatbot.procesar_mensaje(text_body, from_number)
+                            try:
+                                respuesta = chatbot.procesar_mensaje(text_body, from_number)
+                            except Exception:
+                                logger.exception("Error en chatbot.procesar_mensaje para %s: %s", from_number, text_body[:100])
+                                continue
 
                             if not isinstance(respuesta, dict) or "respuesta" not in respuesta:
                                 logger.warning(f"Respuesta invalida del chatbot: {respuesta}")
@@ -62,7 +80,10 @@ def recibir_mensaje():
 
                             if not modo_simulacion and sender:
                                 for t in textos:
-                                    sender.enviar_texto(from_number, t)
+                                    try:
+                                        sender.enviar_texto(from_number, t)
+                                    except Exception:
+                                        logger.exception("Error enviando mensaje a %s", from_number)
 
                             if respuesta.get("intencion") == "cita_agendar" and respuesta.get("datos"):
                                 notificar_nueva_cita(
