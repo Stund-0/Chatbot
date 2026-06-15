@@ -45,12 +45,14 @@ def _conectar_pg():
             if _pg_pool is None:
                 try:
                     import psycopg2
+                    import psycopg2.extras
                     from psycopg2 import pool
                     _pg_pool = pool.ThreadedConnectionPool(
                         minconn=2,
                         maxconn=10,
                         dsn=pg_dsn,
                         sslmode="require",
+                        cursor_factory=psycopg2.extras.RealDictCursor,
                     )
                     logger.info("PostgreSQL connection pool created (min=2, max=10)")
                 except Exception:
