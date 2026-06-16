@@ -4,10 +4,12 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
+# Directorio raiz del proyecto para resolver rutas relativas
 RUTA_BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def _obtener_admin_telefono():
+    """Obtiene el telefono del admin desde variable de entorno o archivo settings.json."""
     telefono = os.getenv("ADMIN_TELEFONO", "")
     if not telefono:
         settings_path = os.path.join(RUTA_BASE, "config", "settings.json")
@@ -22,6 +24,7 @@ def _obtener_admin_telefono():
 
 
 def _cargar_template_admin():
+    """Carga el template de notificacion admin desde archivo o usa uno por defecto."""
     ruta = os.path.join(RUTA_BASE, "mensajes", "mensaje_admin.txt")
     try:
         with open(ruta, "r", encoding="utf-8") as f:
@@ -38,6 +41,7 @@ def _cargar_template_admin():
 
 
 def _formatear_mensaje_admin(numero_cliente, mensaje_cliente, nombre_cliente=""):
+    """Rellena el template de notificacion con los datos del cliente y la fecha/hora actual."""
     template = _cargar_template_admin()
     ahora = datetime.now()
     reemplazos = {
@@ -53,11 +57,13 @@ def _formatear_mensaje_admin(numero_cliente, mensaje_cliente, nombre_cliente="")
 
 
 def notificar_nueva_cita(datos, sender, pendiente_confirmacion=False):
+    """Notifica al administrador sobre una nueva cita agendada o pendiente de confirmacion."""
     admin_telefono = _obtener_admin_telefono()
     if not admin_telefono:
         logger.warning("ADMIN_TELEFONO no configurado. Notificacion de cita no enviada.")
         return {"exito": False, "error": "Admin phone not configured"}
 
+    # Construye mensaje distinto segun si la cita requiere confirmacion o no
     if pendiente_confirmacion:
         folio = datos.get("folio", "N/A")
         mensaje = (
@@ -85,6 +91,7 @@ def notificar_nueva_cita(datos, sender, pendiente_confirmacion=False):
             f"▪️ *Hora:* {datos.get('hora', 'N/A')}"
         )
 
+    # Envia el mensaje via sender de WhatsApp si esta disponible
     if sender:
         resultado = sender.enviar_texto(admin_telefono, mensaje)
         if resultado.get("exito"):
@@ -93,6 +100,7 @@ def notificar_nueva_cita(datos, sender, pendiente_confirmacion=False):
             logger.error("Error al notificar nueva cita: %s", resultado.get("error"))
         return resultado
 
+    # Modo simulacion: imprime la notificacion en consola
     if os.getenv("MODO_SIMULACION", "true").lower() == "true":
         import sys
         mensaje_plano = mensaje.replace("*", "").replace("─", "-")
@@ -106,6 +114,7 @@ def notificar_nueva_cita(datos, sender, pendiente_confirmacion=False):
 
 
 def notificar_admin(numero_cliente, mensaje_cliente, sender, nombre_cliente=""):
+    """Notifica al administrador cuando el chatbot solicita transferencia al humano."""
     admin_telefono = _obtener_admin_telefono()
     if not admin_telefono:
         logger.warning(
@@ -114,10 +123,12 @@ def notificar_admin(numero_cliente, mensaje_cliente, sender, nombre_cliente=""):
         )
         return {"exito": False, "error": "Admin phone not configured"}
 
+    # Formatea el mensaje con los datos del cliente
     mensaje = _formatear_mensaje_admin(
         numero_cliente, mensaje_cliente, nombre_cliente
     )
 
+    # Envia la notificacion via sender de WhatsApp
     if sender:
         resultado = sender.enviar_texto(admin_telefono, mensaje)
         if resultado.get("exito"):
@@ -131,6 +142,7 @@ def notificar_admin(numero_cliente, mensaje_cliente, sender, nombre_cliente=""):
             )
         return resultado
 
+    # Modo simulacion: imprime la notificacion en consola
     if os.getenv("MODO_SIMULACION", "true").lower() == "true":
         import sys
         _stdout = sys.stdout.buffer if hasattr(sys.stdout, 'buffer') else sys.stdout

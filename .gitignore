@@ -11,4 +11,8 @@ node_modules/
 dist/
 build/
 .pytest_cache/
+# Archivo local de bitácora (no se sube a GitHub)
+BITACORA.md
+# Configuración local con credenciales vacías (usar .env en su lugar)
+config/settings.json
 

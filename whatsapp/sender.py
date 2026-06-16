@@ -5,13 +5,18 @@ import requests
 
 
 class WhatsAppSender:
+    """Clase que encapsula el envio de mensajes a traves de la API de WhatsApp Cloud de Meta."""
+
     def __init__(self, token=None, phone_id=None, api_version="v22.0"):
+        """Inicializa el sender con token, phone ID y version de la API de Meta."""
         self.token = token or os.getenv("WHATSAPP_TOKEN", "")
         self.phone_id = phone_id or os.getenv("WHATSAPP_PHONE_ID", "")
         self.api_version = api_version
         self.base_url = f"https://graph.facebook.com/{self.api_version}/{self.phone_id}/messages"
 
     def enviar_texto(self, numero_destino, texto):
+        """Envia un mensaje de texto a un numero de WhatsApp via la API de Meta."""
+        # Si faltan credenciales, entra en modo simulacion
         if not self.token or not self.phone_id:
             return self._simular_envio(numero_destino, texto)
 
@@ -38,6 +43,7 @@ class WhatsAppSender:
             return {"exito": False, "error": str(e)}
 
     def _simular_envio(self, numero_destino, texto):
+        """Simula el envio imprimiendo el mensaje en consola (para desarrollo)."""
         print(f"\n[WHATSAPP SIMULADO] Para: {numero_destino}")
         print(f"[MENSAJE]: {texto[:200]}..." if len(texto) > 200 else f"[MENSAJE]: {texto}")
         print("=" * 50)
